@@ -19,18 +19,17 @@ jobs:
       - name: Dump SDK CoreCompile Csc call
         run: |
           SDS=$(dotnet --list-sdks | sed -E 's/.*\[(.*)\]/\1/')
-          echo "SDKS=$SDS"
           F=""
           for d in $SDS; do
             cand=$(find "$d" -name 'Microsoft.CSharp.CurrentVersion.targets' 2>/dev/null | head -1)
             [ -n "$cand" ] && F="$cand" && break
           done
           echo "FILE=$F"
-          echo "::error::SDK_TTBC_COUNT=$(grep -c 'TargetsTriggeredByCompilation' "$F" 2>/dev/null)"
-          # show CoreCompile's Csc invocation context around TargetsTriggeredByCompilation
-          grep -n -B1 -A1 'TargetsTriggeredByCompilation' "$F" 2>/dev/null | head -20 | while IFS= read -r l; do echo "::error::SDK_TTBC $l"; done
-          # show the <Csc ...> element inside CoreCompile (look for Csc task usage)
-          grep -n '<Csc' "$F" 2>/dev/null | head -5 | while IFS= read -r l; do echo "::error::SDK_CSC $l"; done
+          START=$(grep -n 'Name="CoreCompile"' "$F" | head -1 | cut -d: -f1)
+          echo "CORECOMPILE_START=$START"
+          # emit the Csc call region (lines START..START+120) in chunks
+          sed -n "${START},$((START+120))p" "$F" | sed -n '1,60p' | while IFS= read -r l; do echo "::error::CC1 $l"; done
+          sed -n "${START},$((START+120))p" | sed -n '61,120p' | while IFS= read -r l; do echo "::error::CC2 $l"; done
 
       - name: Restore
         run: dotnet restore src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj
@@ -43,5 +42,4 @@ jobs:
       - name: Diagnostics
         if: always()
         run: |
-          echo "::error::CSC_PARAM_TTBC=$(grep -A140 'Task "Csc"' /tmp/build.log | grep -i 'TargetsTriggeredByCompilation' | head -2)"
           echo "::error::CAX_EXEC=$(grep -c 'Target "CompileAvaloniaXaml"' /tmp/build.log 2>/dev/null)"
