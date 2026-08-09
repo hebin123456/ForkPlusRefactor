@@ -30,6 +30,6 @@ jobs:
       - name: XAML diagnostics
         if: always()
         run: |
-          awk '/CompileAvaloniaXaml/{f=1} f' /tmp/build.log | head -50 | while IFS= read -r line; do echo "::error::DIAG $line"; done
+          tac /tmp/build.log | grep -m1 -B2 -A45 'CompileAvaloniaXaml' | tac | while IFS= read -r line; do echo "::error::DIAG $line"; done
           echo "::error::TAIL==="
-          tail -25 /tmp/build.log | while IFS= read -r line; do echo "::error::TAIL $line"; done
+          tail -20 /tmp/build.log | while IFS= read -r line; do echo "::error::TAIL $line"; done
