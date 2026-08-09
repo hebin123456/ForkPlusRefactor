@@ -8,7 +8,7 @@
     <RootNamespace>ForkPlus.Avalonia</RootNamespace>
     <AssemblyName>ForkPlus.Avalonia</AssemblyName>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <UseAvalonia>true</UseAvalonia>
+    <EnableAvaloniaXamlCompilation>true</EnableAvaloniaXamlCompilation>
   </PropertyGroup>
 
   <ItemGroup>

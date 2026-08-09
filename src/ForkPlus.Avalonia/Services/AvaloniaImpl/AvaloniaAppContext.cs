@@ -28,8 +28,8 @@ namespace ForkPlus.Services.AvaloniaImpl
 
 		public void Shutdown()
 		{
-			if (Avalonia.Application.Current?.ApplicationLifetime
-				is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime lifetime)
+			if (global::Avalonia.Application.Current?.ApplicationLifetime
+				is global::Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime lifetime)
 			{
 				lifetime.Shutdown();
 			}

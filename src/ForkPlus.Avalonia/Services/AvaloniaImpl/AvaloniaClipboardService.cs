@@ -41,7 +41,7 @@ namespace ForkPlus.Services.AvaloniaImpl
 		private static IClipboard? GetClipboard()
 		{
 			if (Application.Current?.ApplicationLifetime
-				is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+				is global::Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
 			{
 				return desktop.MainWindow?.Clipboard;
 			}
