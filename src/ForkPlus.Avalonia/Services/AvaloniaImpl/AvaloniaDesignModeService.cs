@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using ForkPlus.Services;
 
-namespace ForkPlus.Services.Avalonia
+namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 跨平台设计时检测。Avalonia 无 WPF 的 DesignerProperties，

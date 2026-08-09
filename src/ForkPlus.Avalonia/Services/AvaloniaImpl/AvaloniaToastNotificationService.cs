@@ -5,7 +5,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using ForkPlus.Services;
 
-namespace ForkPlus.Services.Avalonia
+namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 跨平台 Toast 通知实现（MVP：in-app 浮层）。

@@ -1,7 +1,7 @@
 using System;
 using ForkPlus.Services;
 
-namespace ForkPlus.Services.Avalonia
+namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 跨平台应用上下文实现。

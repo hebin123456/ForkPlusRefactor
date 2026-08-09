@@ -4,7 +4,7 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using ForkPlus.Services;
 
-namespace ForkPlus.Services.Avalonia
+namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 跨平台剪贴板实现。
@@ -30,7 +30,7 @@ namespace ForkPlus.Services.Avalonia
 		{
 			try
 			{
-				return GetClipboard()?.GetTextAsync().GetAwaiter().GetResult();
+				return GetClipboard()?.TryGetTextAsync().GetAwaiter().GetResult();
 			}
 			catch
 			{

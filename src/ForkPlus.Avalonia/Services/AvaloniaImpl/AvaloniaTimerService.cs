@@ -2,7 +2,7 @@ using System;
 using Avalonia.Threading;
 using ForkPlus.Services;
 
-namespace ForkPlus.Services.Avalonia
+namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 跨平台定时器，直接使用 Avalonia 的 DispatcherTimer（与原 WPF DispatcherTimer 行为一致：在 UI 线程触发 Tick）。

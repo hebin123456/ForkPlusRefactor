@@ -4,7 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using ForkPlus.Services;
 
-namespace ForkPlus.Services.Avalonia
+namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 跨平台窗口管理。对标 WpfWindowManagerService（使用 Application.Current.Windows）。

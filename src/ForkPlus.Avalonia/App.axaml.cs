@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using ForkPlus.Services;
-using ForkPlus.Services.Avalonia;
+using ForkPlus.Services.AvaloniaImpl;
 
 namespace ForkPlus.Avalonia;
 

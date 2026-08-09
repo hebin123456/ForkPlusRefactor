@@ -5,7 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 
-namespace ForkPlus.Services.Avalonia
+namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 轻量 in-app Toast 浮层（MVP）。纯代码构造，无需 XAML。
@@ -19,7 +19,7 @@ namespace ForkPlus.Services.Avalonia
 			Width = 320;
 			Height = 96;
 			WindowStartupLocation = WindowStartupLocation.CenterScreen;
-			SystemDecorations = SystemDecorations.None;
+			WindowDecorations = global::Avalonia.Controls.WindowDecorations.None;
 			Topmost = true;
 			Background = new SolidColorBrush(Color.Parse("#2d2d30"));
 

@@ -2,7 +2,7 @@ using System;
 using Avalonia.Threading;
 using ForkPlus.Services;
 
-namespace ForkPlus.Services.Avalonia
+namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 跨平台 UI 线程调度。对标 WPF 的 Dispatcher.BeginInvoke/Invoke。
