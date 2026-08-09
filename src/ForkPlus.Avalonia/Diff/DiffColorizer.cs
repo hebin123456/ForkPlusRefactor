@@ -33,6 +33,6 @@ public sealed class DiffColorizer : DocumentColorizingTransformer
             _ => null,
         };
         if (brush is not null)
-            ChangeLineBackground(line, brush);
+            ChangeLinePart(line.Offset, line.EndOffset, e => e.BackgroundBrush = brush);
     }
 }

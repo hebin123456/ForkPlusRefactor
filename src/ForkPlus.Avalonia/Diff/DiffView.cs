@@ -46,6 +46,6 @@ public sealed class DiffView : UserControl
         }
 
         _editor.Document = new TextDocument(sb.ToString());
-        _editor.TextArea.LineTransformers.Add(new DiffColorizer(lines));
+        _editor.TextArea.TextView.LineTransformers.Add(new DiffColorizer(lines));
     }
 }
