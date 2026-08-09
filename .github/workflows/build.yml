@@ -41,8 +41,12 @@ jobs:
         if: always()
         run: |
           echo "::error::BUILD_SKIPCOUNT=$(grep -ci 'skipped' /tmp/build.log 2>/dev/null)"
+          echo "::error::CAX_EXEC=$(grep -c 'Target "CompileAvaloniaXaml"' /tmp/build.log 2>/dev/null)"
+          echo "::error::GCS_FILES=$(find obj -name '*.g.cs' 2>/dev/null | tr '\n' ' ')"
+          grep -iE 'Target "CompileAvaloniaXaml' /tmp/build.log | head -10 | while IFS= read -r l; do echo "::error::CAXRUN $l"; done
           grep -iE 'CompileAvaloniaXaml' /tmp/build.log | head -25 | while IFS= read -r l; do echo "::error::CAX $l"; done
-          grep -iE 'skipped|_AvaloniaSkipXamlCompilation' /tmp/build.log | head -25 | while IFS= read -r l; do echo "::error::SKIP $l"; done
-          grep -iE 'error CS|error MSB|XamlIl|XamlX|XAML compiler' /tmp/build.log | head -50 | while IFS= read -r l; do echo "::error::ERR $l"; done
-          grep -iE 'DIAGPROP|DIAGITEMS' /tmp/build.log | head -10 | while IFS= read -r l; do echo "::error::PROP $l"; done
+          grep -iE 'skipped.*CompileAvaloniaXaml|CompileAvaloniaXaml.*skipped|Skipping target "CompileAvaloniaXaml' /tmp/build.log | head -10 | while IFS= read -r l; do echo "::error::SKIPCXX $l"; done
+          grep -iE 'error CS|error MSB|XamlIl|XamlX|XAML compiler|AvaloniaXamlTask|Exception|threw' /tmp/build.log | head -50 | while IFS= read -r l; do echo "::error::ERR $l"; done
+          echo "=== PP CompileAvaloniaXaml target body ==="
+          grep -n -B2 -A30 'Name="CompileAvaloniaXaml"' /tmp/pp.xml | head -45 | while IFS= read -r l; do echo "::error::PP_BODY $l"; done
           tail -25 /tmp/build.log | while IFS= read -r l; do echo "::error::TAIL $l"; done
