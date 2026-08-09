@@ -36,32 +36,15 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # 捕获 dotnet test 完整输出（含崩溃栈），后面作为 commit comment 发到 API 主机，
-      # 绕开外网日志下载端点不可达的问题；|| true 保证即使宿主崩溃也继续。
+      # 捕获 dotnet test 完整输出（含崩溃栈）；|| true 保证即使宿主崩溃也继续。
       - name: Test (xUnit + Avalonia Headless)
         run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release --logger "console;verbosity=detailed" > test_output.txt 2>&1 || true
 
-      - name: Post test output as commit comment
+      # 把输出末尾作为 ::error:: 注解发出（镜像 check-run annotations API 可读），
+      # 绕开外网日志下载端点不可达的问题。sed 把 '::' 转义避免命令嵌套。
+      - name: Surface test output as annotations
         if: always()
-        run: |
-          python3 - <<'PY'
-          import json, urllib.request
-          tok = "${{ secrets.GITHUB_TOKEN }}"
-          sha = "${{ github.sha }}"
-          with open("test_output.txt", "r", errors="replace") as f:
-              txt = f.read()
-          # 只保留末尾 6000 字符，避免超长
-          txt = txt[-6000:]
-          body = {"body": "### dotnet test output (tail)\n```\n" + txt + "\n```"}
-          req = urllib.request.Request(
-              "https://api.kkgithub.com/repos/hebin123456/ForkPlusRefactor/commits/" + sha + "/comments",
-              data=json.dumps(body).encode(),
-              headers={"Authorization": "Bearer " + tok, "Accept": "application/vnd.github+json",
-                       "Content-Type": "application/json"},
-              method="POST")
-          urllib.request.urlopen(req, timeout=60)
-          print("posted comment")
-          PY
+        run: tail -n 60 test_output.txt | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
 
       - name: Fail if tests did not pass
         run: grep -Eq "Passed!" test_output.txt && ! grep -Eq "Failed!" test_output.txt
