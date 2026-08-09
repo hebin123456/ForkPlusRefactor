@@ -24,6 +24,7 @@ public partial class MainWindow : Window
 		CopyButton.Click += OnCopyClicked;
 		ToastButton.Click += OnToastClicked;
 		DiffButton.Click += OnDiffClicked;
+		PlatformButton.Click += OnPlatformClicked;
 	}
 
 	// Avalonia 12：InitializeComponent 必须由代码隐藏提供（内部调用 AvaloniaXamlLoader.Load(this)），
@@ -84,5 +85,13 @@ public void Reset()
 		var result = LineDiff.Compute(oldText, newText, "a/Calculator.cs", "b/Calculator.cs");
 		new DiffWindow(result).Show();
 		StatusText.Text = $"已打开差异对比：{result.Lines.Count} 行（绿=新增，红=删除）。";
+	}
+
+	// P3：打开平台服务演示窗口，验证主题/凭据/文件对话框三个跨平台服务
+	// （分别替代原 WPF 的 SystemThemeHelper / WindowsCredentialManager / OpenDialog(CodePack)）。
+	private void OnPlatformClicked(object? sender, RoutedEventArgs e)
+	{
+		new PlatformServicesDemoWindow().Show();
+		StatusText.Text = "已打开平台服务 Demo (P3)：主题检测 / 凭据管理 / 文件对话框。";
 	}
 }

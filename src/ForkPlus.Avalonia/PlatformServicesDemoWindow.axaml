@@ -1,0 +1,82 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ForkPlus.Avalonia.PlatformServicesDemoWindow"
+        Title="平台服务 Demo (P3)"
+        Width="760" Height="600">
+  <TabControl Margin="16">
+    <!-- 主题：替代 WinRT UISettings + 注册表 AppsUseLightTheme + SystemEvents.UserPreferenceChanged -->
+    <TabItem Header="主题 (SystemThemeHelper)">
+      <StackPanel Margin="12" Spacing="8">
+        <TextBlock FontSize="16" FontWeight="Bold">系统主题检测（跨平台）</TextBlock>
+        <TextBlock TextWrapping="Wrap" Opacity="0.8">
+          原 WPF 用三套机制（WinRT UISettings / 注册表 / SystemEvents）拼出系统明暗与变化事件；
+          此处统一为 Avalonia 的 PlatformThemeVariantManager。
+        </TextBlock>
+        <DockPanel>
+          <TextBlock Text="系统当前变体：" VerticalAlignment="Center"/>
+          <TextBlock x:Name="ThemeSystemText" FontWeight="Bold" Margin="8,0,0,0" VerticalAlignment="Center"/>
+        </DockPanel>
+        <DockPanel>
+          <TextBlock Text="应用请求变体：" VerticalAlignment="Center"/>
+          <TextBlock x:Name="ThemeRequestedText" FontWeight="Bold" Margin="8,0,0,0" VerticalAlignment="Center"/>
+        </DockPanel>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button x:Name="ThemeDarkBtn" Content="切换到深色"/>
+          <Button x:Name="ThemeLightBtn" Content="切换到浅色"/>
+          <Button x:Name="ThemeSystemBtn" Content="跟随系统"/>
+        </StackPanel>
+        <TextBlock FontWeight="Bold" Margin="0,8,0,0">系统主题变化事件日志</TextBlock>
+        <TextBox x:Name="ThemeLog" IsReadOnly="True" AcceptsReturn="True" Height="160" FontFamily="Consolas"/>
+      </StackPanel>
+    </TabItem>
+
+    <!-- 凭据：替代 WindowsCredentialManager（advapi32 CredMan）→ 分平台后端 -->
+    <TabItem Header="凭据 (WindowsCredentialManager)">
+      <StackPanel Margin="12" Spacing="8">
+        <TextBlock FontSize="16" FontWeight="Bold">跨平台凭据管理</TextBlock>
+        <TextBlock TextWrapping="Wrap" Opacity="0.8">
+          原 WPF 经 advapi32 CredRead/CredWrite 存取（仅 Windows）。
+          此处按 OS 分派：Windows=CredMan / macOS=Keychain / Linux=文件存储。
+        </TextBlock>
+        <DockPanel>
+          <TextBlock Text="Target" Width="70" VerticalAlignment="Center"/>
+          <TextBox x:Name="CredTarget" Text="fork:P3Demo/token"/>
+        </DockPanel>
+        <DockPanel>
+          <TextBlock Text="User" Width="70" VerticalAlignment="Center"/>
+          <TextBox x:Name="CredUser" Text="demo-user"/>
+        </DockPanel>
+        <DockPanel>
+          <TextBlock Text="Secret" Width="70" VerticalAlignment="Center"/>
+          <TextBox x:Name="CredSecret" Text="s3cr3t-value" PasswordChar="*"/>
+        </DockPanel>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button x:Name="CredSaveBtn" Content="保存"/>
+          <Button x:Name="CredLoadBtn" Content="读取"/>
+          <Button x:Name="CredDeleteBtn" Content="删除"/>
+          <Button x:Name="CredEnumBtn" Content="枚举"/>
+          <Button x:Name="CredSshBtn" Content="SSH 口令往返测试"/>
+        </StackPanel>
+        <TextBox x:Name="CredResult" IsReadOnly="True" AcceptsReturn="True" Height="180" FontFamily="Consolas"/>
+      </StackPanel>
+    </TabItem>
+
+    <!-- 文件对话框：替代 Windows API Code Pack CommonOpenFileDialog -->
+    <TabItem Header="文件对话框 (OpenDialog/CodePack)">
+      <StackPanel Margin="12" Spacing="8">
+        <TextBlock FontSize="16" FontWeight="Bold">跨平台文件/目录对话框</TextBlock>
+        <TextBlock TextWrapping="Wrap" Opacity="0.8">
+          原 WPF 依赖 Windows API Code Pack 的 CommonOpenFileDialog / CommonSaveFileDialog；
+          此处用 Avalonia 原生 OpenFileDialog / SaveFileDialog / OpenFolderDialog 替代。
+        </TextBlock>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button x:Name="FileDirBtn" Content="选择目录"/>
+          <Button x:Name="FileFileBtn" Content="选择文件"/>
+          <Button x:Name="FileExeBtn" Content="选择可执行文件"/>
+          <Button x:Name="FileSaveBtn" Content="保存文件"/>
+        </StackPanel>
+        <TextBox x:Name="FileResult" IsReadOnly="True" AcceptsReturn="True" Height="300" FontFamily="Consolas"/>
+      </StackPanel>
+    </TabItem>
+  </TabControl>
+</Window>

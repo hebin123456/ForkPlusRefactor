@@ -26,6 +26,7 @@ public partial class App : Application
 		// 业务层（未来从 ForkPlus 搬运的 ViewModel / Commands）通过 ServiceLocator 取服务，零改动。
 		if (!ServiceLocator.IsInitialized)
 		{
+			var theme = new AvaloniaThemeService();
 			ServiceLocator.Initialize(
 				dispatcher: new AvaloniaDispatcher(),
 				designMode: new AvaloniaDesignModeService(),
@@ -33,7 +34,12 @@ public partial class App : Application
 				clipboard: new AvaloniaClipboardService(),
 				timer: new AvaloniaTimerService(),
 				toast: new AvaloniaToastNotificationService(),
-				windowManager: new AvaloniaWindowManagerService());
+				windowManager: new AvaloniaWindowManagerService(),
+				theme: theme,
+				credentials: new AvaloniaCredentialManager(),
+				fileDialog: new AvaloniaFileDialogService());
+			// 启动系统主题跟踪（对标原 WPF Theme.SubscribeToSystemEvents + App.SubscribeToUserPreferences）
+			theme.StartSystemTracking();
 		}
 
 		if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

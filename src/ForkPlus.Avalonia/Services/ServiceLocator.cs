@@ -17,6 +17,9 @@ namespace ForkPlus.Services
 		public static ITimerService Timer { get; private set; }
 		public static IToastNotificationService Toast { get; private set; }
 		public static IWindowManagerService WindowManager { get; private set; }
+		public static IThemeService Theme { get; private set; }
+		public static ICredentialManager Credentials { get; private set; }
+		public static IFileDialogService FileDialog { get; private set; }
 
 		public static bool IsInitialized { get; private set; }
 
@@ -27,7 +30,10 @@ namespace ForkPlus.Services
 			IClipboardService clipboard,
 			ITimerService timer = null,
 			IToastNotificationService toast = null,
-			IWindowManagerService windowManager = null)
+			IWindowManagerService windowManager = null,
+			IThemeService theme = null,
+			ICredentialManager credentials = null,
+			IFileDialogService fileDialog = null)
 		{
 			Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
 			DesignMode = designMode ?? throw new ArgumentNullException(nameof(designMode));
@@ -36,6 +42,9 @@ namespace ForkPlus.Services
 			Timer = timer;
 			Toast = toast;
 			WindowManager = windowManager;
+			Theme = theme;
+			Credentials = credentials;
+			FileDialog = fileDialog;
 			IsInitialized = true;
 		}
 
@@ -45,6 +54,10 @@ namespace ForkPlus.Services
 			DesignMode = null;
 			AppContext = null;
 			Clipboard = null;
+			WindowManager = null;
+			Theme = null;
+			Credentials = null;
+			FileDialog = null;
 			IsInitialized = false;
 		}
 	}
