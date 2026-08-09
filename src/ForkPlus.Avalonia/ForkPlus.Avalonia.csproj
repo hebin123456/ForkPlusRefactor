@@ -18,4 +18,10 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
   </ItemGroup>
 
+  <!-- TEMP diagnostic: remove after XAML compilation gap is closed -->
+  <Target Name="DiagAvaloniaXaml" BeforeTargets="GenerateAvaloniaResources;CompileAvaloniaXaml;CoreCompile">
+    <Message Text="DIAGPROP EnableAvaloniaXamlCompilation='$(EnableAvaloniaXamlCompilation)' _AvaloniaSkipXamlCompilation='$(_AvaloniaSkipXamlCompilation)' AvaloniaNameGeneratorBehavior='$(AvaloniaNameGeneratorBehavior)' AvaloniaXamlIlEnabled='$(AvaloniaXamlIlEnabled)'" Importance="high" />
+    <Message Text="DIAGITEMS AvaloniaXaml='@(AvaloniaXaml)'" Importance="high" />
+  </Target>
+
 </Project>

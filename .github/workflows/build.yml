@@ -1,20 +1,17 @@
 name: Build
 
-# 每次向 main 推送、或开 PR 到 main 时，构建 Avalonia 迁移工程，确保跨平台可编译。
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET 10 SDK
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
@@ -22,14 +19,30 @@ jobs:
       - name: Restore
         run: dotnet restore src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj
 
-      - name: Build (Release)
+      - name: Preprocess (dump target conditions)
+        continue-on-error: true
+        run: |
+          dotnet msbuild src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj -pp:/tmp/pp.xml -p:EnableAvaloniaXamlCompilation=true 2>&1 | tail -3
+          echo "=== PP count CompileAvaloniaXaml ==="
+          grep -c 'CompileAvaloniaXaml' /tmp/pp.xml | xargs -I{} echo "::error::PP_COUNT CompileAvaloniaXaml occurrences: {}"
+          echo "=== PP target condition (CompileAvaloniaXaml) ==="
+          grep -n -A4 'Name="CompileAvaloniaXaml"' /tmp/pp.xml | head -30 | while IFS= read -r l; do echo "::error::PP_CAX $l"; done
+          echo "=== PP _AvaloniaSkipXamlCompilation assignments ==="
+          grep -n '_AvaloniaSkipXamlCompilation' /tmp/pp.xml | head -25 | while IFS= read -r l; do echo "::error::PP_SKIP $l"; done
+          echo "=== PP InitializeComponent generator ==="
+          grep -n 'InitializeComponent' /tmp/pp.xml | head -10 | while IFS= read -r l; do echo "::error::PP_INIT $l"; done
+
+      - name: Build (Release, diag)
         run: |
           set -o pipefail
           dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release -v diag 2>&1 | tee /tmp/build.log
 
-      - name: XAML diagnostics
+      - name: Diagnostics
         if: always()
         run: |
-          grep -A 40 'Target "CompileAvaloniaXaml' /tmp/build.log | head -50 | while IFS= read -r line; do echo "::error::DIAG $line"; done
-          echo "::error::TAIL==="
-          tail -20 /tmp/build.log | while IFS= read -r line; do echo "::error::TAIL $line"; done
+          echo "::error::BUILD_SKIPCOUNT=$(grep -ci 'skipped' /tmp/build.log 2>/dev/null)"
+          grep -iE 'CompileAvaloniaXaml' /tmp/build.log | head -25 | while IFS= read -r l; do echo "::error::CAX $l"; done
+          grep -iE 'skipped|_AvaloniaSkipXamlCompilation' /tmp/build.log | head -25 | while IFS= read -r l; do echo "::error::SKIP $l"; done
+          grep -iE 'error CS|error MSB|XamlIl|XamlX|XAML compiler' /tmp/build.log | head -50 | while IFS= read -r l; do echo "::error::ERR $l"; done
+          grep -iE 'DIAGPROP|DIAGITEMS' /tmp/build.log | head -10 | while IFS= read -r l; do echo "::error::PROP $l"; done
+          tail -25 /tmp/build.log | while IFS= read -r l; do echo "::error::TAIL $l"; done
