@@ -7,8 +7,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>ForkPlus.Avalonia</RootNamespace>
     <AssemblyName>ForkPlus.Avalonia</AssemblyName>
-    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <EnableAvaloniaXamlCompilation>true</EnableAvaloniaXamlCompilation>
+    <!--
+      XAML 编译策略：使用 Roslyn 名称生成器在编译期生成 InitializeComponent（运行时加载 XAML）。
+      Avalonia 的 XamlX IL 编译（EnableAvaloniaXamlCompilation=true）依赖 Csc 任务通过
+      TargetsTriggeredByCompilation 触发 CompileAvaloniaXaml 目标；经 CI 诊断确认，该机制在
+      当前 .NET 10 SDK 环境下未被触发（AvaloniaXaml.Count=2、EnableAvaloniaXamlCompilation=true、
+      _AvaloniaSkipXamlCompilation=false，但 CompileAvaloniaXaml 从未执行、未生成 .g.cs）。
+      因此改为运行时加载，保证本地与 CI 均可构建；后续若解决触发问题可重新开启 IL 编译。
+    -->
+    <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,11 +25,5 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
   </ItemGroup>
-
-  <!-- TEMP diagnostic: remove after XAML compilation gap is closed -->
-  <Target Name="DiagAvaloniaXaml" BeforeTargets="GenerateAvaloniaResources;CompileAvaloniaXaml;CoreCompile">
-    <Message Text="DIAGPROP EnableAvaloniaXamlCompilation='$(EnableAvaloniaXamlCompilation)' _AvaloniaSkipXamlCompilation='$(_AvaloniaSkipXamlCompilation)' DesignTimeBuild='$(DesignTimeBuild)' AvaloniaNameGeneratorBehavior='$(AvaloniaNameGeneratorBehavior)'" Importance="high" />
-    <Message Text="DIAGITEMS AvaloniaXaml.Count=@(AvaloniaXaml->Count()) AvaloniaResource.Count=@(AvaloniaResource->Count())" Importance="high" />
-  </Target>
 
 </Project>

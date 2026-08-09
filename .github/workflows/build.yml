@@ -19,32 +19,11 @@ jobs:
       - name: Restore
         run: dotnet restore src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj
 
-      - name: Preprocess (dump target conditions)
-        continue-on-error: true
-        run: |
-          dotnet msbuild src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj -pp:/tmp/pp.xml -p:EnableAvaloniaXamlCompilation=true 2>&1 | tail -3
-          echo "=== PP count CompileAvaloniaXaml ==="
-          grep -c 'CompileAvaloniaXaml' /tmp/pp.xml | xargs -I{} echo "::error::PP_COUNT CompileAvaloniaXaml occurrences: {}"
-          echo "=== PP target condition (CompileAvaloniaXaml) ==="
-          grep -n -A4 'Name="CompileAvaloniaXaml"' /tmp/pp.xml | head -30 | while IFS= read -r l; do echo "::error::PP_CAX $l"; done
-          echo "=== PP _AvaloniaSkipXamlCompilation assignments ==="
-          grep -n '_AvaloniaSkipXamlCompilation' /tmp/pp.xml | head -25 | while IFS= read -r l; do echo "::error::PP_SKIP $l"; done
-          echo "=== PP InitializeComponent generator ==="
-          grep -n 'InitializeComponent' /tmp/pp.xml | head -10 | while IFS= read -r l; do echo "::error::PP_INIT $l"; done
-
-      - name: Build (Release, diag)
-        run: |
-          set -o pipefail
-          dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release -v diag 2>&1 | tee /tmp/build.log
+      - name: Build (Release)
+        run: dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release
 
       - name: Diagnostics
         if: always()
         run: |
-          echo "::error::CAX_EXEC=$(grep -c 'Target "CompileAvaloniaXaml"' /tmp/build.log 2>/dev/null)"
-          echo "::error::GCS_FILES=$(find obj -name '*.g.cs' 2>/dev/null | tr '\n' ' ')"
-          echo "=== Csc task TargetsTriggeredByCompilation param ==="
-          grep -n -B30 'TargetsTriggeredByCompilation' /tmp/build.log | grep -iE 'Task "Csc"|TargetsTriggeredByCompilation' | head -10 | while IFS= read -r l; do echo "::error::CSC $l"; done
-          grep -c 'Task "Csc"' /tmp/build.log | xargs -I{} echo "::error::CSC_COUNT Csc task invocations: {}"
-          grep -iE 'DIAGPROP|DIAGITEMS' /tmp/build.log | head -10 | while IFS= read -r l; do echo "::error::PROP $l"; done
-          grep -iE 'error CS|error MSB|XamlIl|XamlX|XAML compiler|AvaloniaXamlTask|Exception|threw' /tmp/build.log | head -30 | while IFS= read -r l; do echo "::error::ERR $l"; done
-          tail -15 /tmp/build.log | while IFS= read -r l; do echo "::error::TAIL $l"; done
+          echo "::error::GCS_FILES=$(find src/ForkPlus.Avalonia/obj -name '*.g.cs' 2>/dev/null | tr '\n' ' ')"
+          echo "::error::BUILD_DONE"
