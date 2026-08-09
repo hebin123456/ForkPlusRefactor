@@ -16,20 +16,6 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Dump SDK CoreCompile <Csc> call (compressed)
-        run: |
-          SDS=$(dotnet --list-sdks | sed -E 's/.*\[(.*)\]/\1/')
-          F=""
-          for d in $SDS; do
-            cand=$(find "$d" -name 'Microsoft.CSharp.CurrentVersion.targets' 2>/dev/null | head -1)
-            [ -n "$cand" ] && F="$cand" && break
-          done
-          START=$(grep -n 'Name="CoreCompile"' "$F" | head -1 | cut -d: -f1)
-          # find the <Csc ...> ... /> element starting near START+10
-          sed -n "${START},$((START+200))p" "$F" | awk '/<Csc /{f=1} f{printf "%s ", $0} /\/>/{if(f){print; exit}}' > /tmp/csc.txt
-          echo "::error::CSC_CALL $(cat /tmp/csc.txt)"
-          echo "::error::HAS_TTBC=$(grep -c TargetsTriggeredByCompilation /tmp/csc.txt 2>/dev/null)"
-
       - name: Restore
         run: dotnet restore src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj
 
@@ -42,3 +28,5 @@ jobs:
         if: always()
         run: |
           echo "::error::CAX_EXEC=$(grep -c 'Target "CompileAvaloniaXaml"' /tmp/build.log 2>/dev/null)"
+          echo "::error::GCS_FILES=$(grep -oE 'GeneratedFiles/[^ ]+\.g\.cs' /tmp/build.log | sort -u | tr '\n' '|' 2>/dev/null)"
+          echo "::error::BUILD_OK=$(grep -cE 'Build succeeded|0 Error' /tmp/build.log 2>/dev/null)"

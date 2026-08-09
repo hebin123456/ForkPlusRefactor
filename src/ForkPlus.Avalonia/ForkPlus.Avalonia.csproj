@@ -21,4 +21,60 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
   </ItemGroup>
 
+  <!--
+    WORKAROUND（与具体 .NET 10 SDK 版本无关）：
+    .NET 10 SDK 的 CoreCompile 目标中，触发 TargetsTriggeredByCompilation 的 CallTarget 已被注释掉，
+    且其 <Csc> 调用不再把 $(TargetsTriggeredByCompilation) 透传给 Csc 任务（已在 CI 中通过预处理 +
+    build 日志确认：Csc 任务未收到 TargetsTriggeredByCompilation，CompileAvaloniaXaml 从未执行）。
+    而 Avalonia 的 CompileAvaloniaXaml 仅依赖该机制运行，导致 InitializeComponent 永不生成、构建失败。
+    这里覆盖 CoreCompile，在 <Csc> 调用中显式透传 TargetsTriggeredByCompilation，恢复 in-Csc 触发，
+    使 CompileAvaloniaXaml 能在编译期内（DLL 已生成、源码尚未编译、重新读取 @(Compile)）生成 InitializeComponent。
+  -->
+  <Target Name="CoreCompile" DependsOnTargets="$(CoreCompileDependsOn)">
+    <Csc
+        Sources="@(Compile)"
+        References="@(ReferencePathWithRefAssemblies)"
+        Resources="@(ManifestResourceWithNoCulture)"
+        ResponseFiles="@(CompileResponseFile)"
+        AdditionalLibPaths="$(AdditionalLibPaths)"
+        AddModules="@(AddModules)"
+        AllowUnsafeBlocks="$(AllowUnsafeBlocks)"
+        BaseAddress="$(BaseAddress)"
+        CheckForOverflowUnderflow="$(CheckForOverflowUnderflow)"
+        CodePage="$(CodePage)"
+        DebugType="$(DebugType)"
+        DefineConstants="$(DefineConstants)"
+        DelaySign="$(DelaySign)"
+        DisabledWarnings="$(NoWarn)"
+        EmitDebugInformation="$(DebugSymbols)"
+        FileAlignment="$(FileAlignment)"
+        GenerateFullPaths="$(GenerateFullPaths)"
+        KeyContainer="$(KeyContainerName)"
+        KeyFile="$(AssemblyOriginatorKeyFile)"
+        LangVersion="$(LangVersion)"
+        MainEntryPoint="$(StartupObject)"
+        NoConfig="true"
+        NoLogo="$(NoLogo)"
+        NoStandardLib="$(NoStandardLib)"
+        Optimize="$(Optimize)"
+        OutputAssembly="$(IntermediateAssembly)"
+        PdbFile="$(PdbFile)"
+        Platform="$(PlatformTarget)"
+        ProduceReferenceAssembly="$(ProduceReferenceAssembly)"
+        RefOut="$(IntermediateRefAssembly)"
+        TargetType="$(OutputType)"
+        TreatWarningsAsErrors="$(TreatWarningsAsErrors)"
+        UseSharedCompilation="$(UseSharedCompilation)"
+        WarningLevel="$(WarningLevel)"
+        WarningsAsErrors="$(WarningsAsErrors)"
+        Win32Resource="$(Win32Resource)"
+        Analyzer="@(Analyzer)"
+        AnalyzerConfigFiles="@(EditorConfigFiles)"
+        AdditionalFiles="@(AdditionalFiles)"
+        EmbeddedFiles="@(EmbeddedFiles)"
+        TargetsTriggeredByCompilation="$(TargetsTriggeredByCompilation)">
+      <Output TaskParameter="OutputAssembly" ItemName="IntermediateAssembly" />
+    </Csc>
+  </Target>
+
 </Project>
