@@ -1,8 +1,9 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chart="clr-namespace:ForkPlus.Avalonia.Chart"
         x:Class="ForkPlus.Avalonia.PlatformServicesDemoWindow"
         Title="平台服务 Demo (P3)"
-        Width="760" Height="600">
+        Width="780" Height="640">
   <TabControl Margin="16">
     <!-- 主题：替代 WinRT UISettings + 注册表 AppsUseLightTheme + SystemEvents.UserPreferenceChanged -->
     <TabItem Header="主题 (SystemThemeHelper)">
@@ -76,6 +77,87 @@
           <Button x:Name="FileSaveBtn" Content="保存文件"/>
         </StackPanel>
         <TextBox x:Name="FileResult" IsReadOnly="True" AcceptsReturn="True" Height="300" FontFamily="Consolas"/>
+      </StackPanel>
+    </TabItem>
+
+    <!-- Git 路径：替代 App.xaml.cs 写死的 git.exe / sh.exe / bash.exe / git-mm.exe -->
+    <TabItem Header="Git 路径 (App.xaml.cs)">
+      <StackPanel Margin="12" Spacing="8">
+        <TextBlock FontSize="16" FontWeight="Bold">跨平台 Git 工具路径解析</TextBlock>
+        <TextBlock TextWrapping="Wrap" Opacity="0.8">
+          原 WPF 把 GitPath/ShellPath/BashPath/GitMmPath 全部写死 .exe，Linux 下找不到 git.exe 直接报错
+          （见验证截图 55-git-error-dialog.png）。此处按平台去/加 .exe，从 PATH 解析。
+        </TextBlock>
+        <Button x:Name="GitRefreshBtn" Content="重新解析并刷新" HorizontalAlignment="Left"/>
+        <TextBox x:Name="GitResult" IsReadOnly="True" AcceptsReturn="True" Height="150" FontFamily="Consolas"/>
+        <DockPanel>
+          <TextBlock Text="FindExecutableInPath 测试：" VerticalAlignment="Center"/>
+          <TextBox x:Name="GitTestName" Text="git" Width="160" Margin="8,0,0,0"/>
+          <Button x:Name="GitTestBtn" Content="查找" Margin="8,0,0,0"/>
+        </DockPanel>
+        <TextBox x:Name="GitTestResult" IsReadOnly="True" FontFamily="Consolas"/>
+      </StackPanel>
+    </TabItem>
+
+    <!-- Shell 集成：替代 shell32 AppUserModelID / CodePack 跳转列表 -->
+    <TabItem Header="Shell (AppUserModelID)">
+      <StackPanel Margin="12" Spacing="8">
+        <TextBlock FontSize="16" FontWeight="Bold">Shell 集成（任务栏 / 跳转列表）</TextBlock>
+        <TextBlock TextWrapping="Wrap" Opacity="0.8">
+          原 WPF 经 shell32.dll SetCurrentProcessExplicitAppUserModelID 设置任务栏分组，
+          CodePack 提供跳转列表。这些本质是 Windows 专属：非 Windows 安全降级为 no-op（避免 Wine 崩溃）。
+        </TextBlock>
+        <DockPanel>
+          <TextBlock Text="AppUserModelID" Width="120" VerticalAlignment="Center"/>
+          <TextBox x:Name="ShellAppId" Text="com.squirrel.ForkPlus.ForkPlus"/>
+        </DockPanel>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button x:Name="ShellSetBtn" Content="设置 AppUserModelID"/>
+          <Button x:Name="ShellRecentBtn" Content="添加最近文件(示例)"/>
+        </StackPanel>
+        <TextBox x:Name="ShellResult" IsReadOnly="True" AcceptsReturn="True" Height="120" FontFamily="Consolas"/>
+      </StackPanel>
+    </TabItem>
+
+    <!-- 通知：跨平台 Toast（Linux notify-send / macOS osascript / 其他 in-app 浮层） -->
+    <TabItem Header="通知 (Toast)">
+      <StackPanel Margin="12" Spacing="8">
+        <TextBlock FontSize="16" FontWeight="Bold">跨平台 Toast 通知</TextBlock>
+        <TextBlock TextWrapping="Wrap" Opacity="0.8">
+          原 WPF 用 WinRT Toast（Windows.Data.Xml.Dom + Windows.UI.Notifications）。
+          此处解析同一份 WinRT XML：Linux→notify-send，macOS→osascript，其他→in-app 浮层（保底一定可见）。
+        </TextBlock>
+        <DockPanel>
+          <TextBlock Text="标题" Width="60" VerticalAlignment="Center"/>
+          <TextBox x:Name="ToastTitle" Text="新通知"/>
+        </DockPanel>
+        <DockPanel>
+          <TextBlock Text="正文" Width="60" VerticalAlignment="Center"/>
+          <TextBox x:Name="ToastBody" Text="你有 3 条新通知"/>
+        </DockPanel>
+        <Button x:Name="ToastSendBtn" Content="发送通知" HorizontalAlignment="Left"/>
+        <TextBox x:Name="ToastResult" IsReadOnly="True" AcceptsReturn="True" Height="100" FontFamily="Consolas"/>
+      </StackPanel>
+    </TabItem>
+
+    <!-- 图表：替代 OxyPlot.Wpf 渲染控件（官方无 OxyPlot.Avalonia，用原生 DrawingContext 渲染同构模型） -->
+    <TabItem Header="图表 (OxyPlot→原生)">
+      <StackPanel Margin="12" Spacing="8">
+        <TextBlock FontSize="16" FontWeight="Bold">跨平台图表（OxyPlot 同构模型）</TextBlock>
+        <TextBlock TextWrapping="Wrap" Opacity="0.8">
+          官方 oxyplot 仓库仅提供 Wpf/WinForms/SkiaSharp/ImageSharp/Pdf 后端，无第一方 Avalonia 包，
+          且对 net10.0/Avalonia 12 兼容性无法验证。此处用 Avalonia 原生 DrawingContext 渲染
+          与 OxyPlot PlotModel/Series 同构的模型，零外部依赖、跨平台一致。
+        </TextBlock>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="类型" VerticalAlignment="Center"/>
+          <ComboBox x:Name="ChartType" Width="140">
+            <ComboBoxItem>折线（每月提交）</ComboBoxItem>
+            <ComboBoxItem>柱状（每周提交）</ComboBoxItem>
+            <ComboBoxItem>饼图（语言占比）</ComboBoxItem>
+          </ComboBox>
+        </StackPanel>
+        <chart:AvaloniaChart x:Name="Chart" Height="320"/>
       </StackPanel>
     </TabItem>
   </TabControl>

@@ -37,7 +37,9 @@ public partial class App : Application
 				windowManager: new AvaloniaWindowManagerService(),
 				theme: theme,
 				credentials: new AvaloniaCredentialManager(),
-				fileDialog: new AvaloniaFileDialogService());
+				fileDialog: new AvaloniaFileDialogService(),
+				gitPathResolver: new AvaloniaGitPathResolver(),
+				shell: new AvaloniaShellIntegrationService());
 			// 启动系统主题跟踪（对标原 WPF Theme.SubscribeToSystemEvents + App.SubscribeToUserPreferences）
 			theme.StartSystemTracking();
 		}

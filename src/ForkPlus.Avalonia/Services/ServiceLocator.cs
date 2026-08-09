@@ -20,6 +20,8 @@ namespace ForkPlus.Services
 		public static IThemeService Theme { get; private set; }
 		public static ICredentialManager Credentials { get; private set; }
 		public static IFileDialogService FileDialog { get; private set; }
+		public static IGitPathResolver GitPathResolver { get; private set; }
+		public static IShellIntegrationService Shell { get; private set; }
 
 		public static bool IsInitialized { get; private set; }
 
@@ -33,7 +35,9 @@ namespace ForkPlus.Services
 			IWindowManagerService windowManager = null,
 			IThemeService theme = null,
 			ICredentialManager credentials = null,
-			IFileDialogService fileDialog = null)
+			IFileDialogService fileDialog = null,
+			IGitPathResolver gitPathResolver = null,
+			IShellIntegrationService shell = null)
 		{
 			Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
 			DesignMode = designMode ?? throw new ArgumentNullException(nameof(designMode));
@@ -45,6 +49,8 @@ namespace ForkPlus.Services
 			Theme = theme;
 			Credentials = credentials;
 			FileDialog = fileDialog;
+			GitPathResolver = gitPathResolver;
+			Shell = shell;
 			IsInitialized = true;
 		}
 
@@ -58,6 +64,8 @@ namespace ForkPlus.Services
 			Theme = null;
 			Credentials = null;
 			FileDialog = null;
+			GitPathResolver = null;
+			Shell = null;
 			IsInitialized = false;
 		}
 	}
