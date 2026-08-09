@@ -200,22 +200,25 @@ public class MarkdownParserTests
 		var sb = new System.Text.StringBuilder();
 		foreach (var inline in inlines)
 		{
-			switch (inline.Kind)
-			{
-				case MdInlineKind.Text:
-				case MdInlineKind.Code:
-					sb.Append(inline.Text);
-					break;
-				case MdInlineKind.Bold:
-				case MdInlineKind.Italic:
-					sb.Append(InlineText(inline.Children));
-					break;
-				case MdInlineKind.Link:
-					sb.Append(inline.Text);
-					break;
-			}
+			sb.Append(InlineText(inline));
 		}
 		return sb.ToString();
+	}
+
+	private static string InlineText(MdInline inline)
+	{
+		switch (inline.Kind)
+		{
+			case MdInlineKind.Text:
+			case MdInlineKind.Code:
+			case MdInlineKind.Link:
+				return inline.Text ?? "";
+			case MdInlineKind.Bold:
+			case MdInlineKind.Italic:
+				return InlineText(inline.Children);
+			default:
+				return "";
+		}
 	}
 }
 
