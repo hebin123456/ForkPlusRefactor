@@ -16,15 +16,15 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Dump SDK CoreCompile / TargetsTriggeredByCompilation
+      - name: Dump SDK CoreCompile handling of TargetsTriggeredByCompilation
         run: |
           SDK=$(dotnet --list-sdks --print-path 2>/dev/null | head -1)
           echo "SDK=$SDK"
           F=$(find "$SDK" -name 'Microsoft.CSharp.CurrentVersion.targets' 2>/dev/null | head -1)
           echo "FILE=$F"
-          echo "::error::TTBC_COUNT=$(grep -c 'TargetsTriggeredByCompilation' "$F" 2>/dev/null)"
-          grep -n -B2 -A2 'TargetsTriggeredByCompilation' "$F" 2>/dev/null | head -40 | while IFS= read -r l; do echo "::error::SDK_TTBC $l"; done
-          grep -n 'CallTarget Targets="$(TargetsTriggeredByCompilation)"' "$F" 2>/dev/null | head | while IFS= read -r l; do echo "::error::SDK_CALL $l"; done
+          echo "::error::SDK_TTBC_COUNT=$(grep -c 'TargetsTriggeredByCompilation' "$F" 2>/dev/null)"
+          echo "::error::SDK_CALL=$(grep -n 'CallTarget Targets="$(TargetsTriggeredByCompilation)"' "$F" 2>/dev/null | head -3)"
+          grep -n 'TargetsTriggeredByCompilation' "$F" 2>/dev/null | head -5 | while IFS= read -r l; do echo "::error::SDK_LINE $l"; done
 
       - name: Restore
         run: dotnet restore src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj
@@ -37,8 +37,7 @@ jobs:
       - name: Diagnostics
         if: always()
         run: |
+          echo "::error::CSC_PARAM=$(grep -A60 'Task "Csc"' /tmp/build.log | grep -i 'TargetsTriggeredByCompilation' | head -3)"
           echo "::error::CAX_EXEC=$(grep -c 'Target "CompileAvaloniaXaml"' /tmp/build.log 2>/dev/null)"
-          echo "::error::CSC_TTBC=$(grep -c 'TargetsTriggeredByCompilation' /tmp/build.log 2>/dev/null)"
-          grep -iE 'Task "Csc"' /tmp/build.log | head -5 | while IFS= read -r l; do echo "::error::CSC $l"; done
-          grep -iE 'error CS|error MSB|CompileAvaloniaXamlTask|Exception' /tmp/build.log | head -20 | while IFS= read -r l; do echo "::error::ERR $l"; done
-          tail -8 /tmp/build.log | while IFS= read -r l; do echo "::error::TAIL $l"; done
+          echo "::error::CSC_TTBC_LOG=$(grep -c 'TargetsTriggeredByCompilation' /tmp/build.log 2>/dev/null)"
+          grep -iE 'error CS0103' /tmp/build.log | head -3 | while IFS= read -r l; do echo "::error::ERR $l"; done
