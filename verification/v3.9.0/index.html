@@ -1,72 +1,71 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<title>ForkPlus v3.9.0 验证截图索引（56张）</title>
-<style>
-  body{font-family:"Microsoft YaHei",Segoe UI,sans-serif;margin:24px;background:#f5f5f5;color:#222}
-  h1{font-size:22px}
-  h2{font-size:18px;margin-top:32px}
-  .meta{color:#666;margin-bottom:16px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-  .card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-  .card img{width:100%;display:block;background:#fff}
-  .card .cap{padding:8px 10px;font-size:12px;color:#444;word-break:break-all;border-top:1px solid #eee}
-  .new{border-left:4px solid #2e7d32}
-  .new .cap{background:#e8f5e9}
-  a{color:#0366d6;text-decoration:none}
-  code{background:#f0f0f0;padding:1px 5px;border-radius:3px}
-</style>
-</head>
-<body>
-<h1>ForkPlus v3.9.0 验证截图索引</h1>
-<div class="meta">
-  共 <b>56</b> 张截图（前 51 张为初次功能覆盖，后 5 张为本轮补拍：外观菜单 / 深色主题 / AI 辅助开发 / Git 错误 / 偏好 AI 增强）。<br>
-  每张图配套操作步骤：[<a href="操作步骤.md">操作步骤.md</a>]（说明按了什么按钮、菜单路径、屏幕坐标，方便代码重构对照）。<br>
-  已上传至 GitHub 仓库：<a href="https://github.com/hebin123456/ForkPlusRefactor/tree/main/verification/v3.9.0">ForkPlusRefactor / verification / v3.9.0</a>
-</div>
-
-<h2>本轮新增（5 张，含 v3.9.0 核心重构界面）</h2>
-<div class="grid" id="new"></div>
-
-<h2>初次 51 张（功能覆盖 + git 场景）</h2>
-<div class="grid" id="orig"></div>
-
-<script>
-const newShots = [
-  {f:"52-appearance-menu.png", t:"外观菜单：主题 / 语言 / 提交列表布局选择"},
-  {f:"53-dark-theme-main.png", t:"深色主题主界面（从外观菜单切换）"},
-  {f:"54-ai-assistant-unconfigured.png", t:"AI 辅助开发未配置提示（v3.9.0 统一重构）"},
-  {f:"55-git-error-dialog.png", t:"Git 错误对话框（探测 C:\\PortableGit 失败）"},
-  {f:"56-prefs-ai-enhancement.png", t:"偏好设置 · AI 增强 + 技能系统"}
-];
-
-const origShots = [
-"01-welcome-v390.png","02-open-dialog.png","03-demo-graph.png","04-diff-tab.png","05-filetree-tab.png",
-"06-after-restart.png","07-tooltip-check.png","08-commit-ctx.png","08-commit-ctx_000.png","09-branch-ctx.png",
-"09-branch-ctx_000.png","09-branch-ctx_001.png","09-branch-ctx_002.png","10-stash-ctx.png","v2-10-stash-ctx.png",
-"v2-11-commit-ctx.png","v2-12-tags.png","v2-13-submodule.png","v2-14-sidebar-expanded.png","v2-15-origin-submodule.png",
-"v2-16-sidebar-full.png","v2-17-local-changes.png","v2-18-staged.png","v2-18b-staged.png","v2-19-commit-msg.png",
-"v2-20-after-commit.png","v2-20b-after-commit.png","v2-21-after-pull.png","v2-21-pull-dialog.png","v2-22-pull-done.png",
-"v2-23-after-undo.png","v2-23-undo-confirm.png","v2-24-after-redo.png","v2-24-undo-result.png","v2-25-push-dialog.png",
-"v2-25-redo-result.png","v2-26-push-dialog.png","v2-27-push-done.png","v2-28-stash-dropdown.png","v2-29-new-branch.png",
-"v2-29b-recheck.png","v2-30-new-branch.png","v2-31-new-branch-filled.png","v2-32-branch-created.png","v2-33-branch-created.png",
-"v2-34-new-tag.png","v2-35-tag-created.png","v2-36-tag-done.png","v2-37-openwith.png","v2-38-console.png","v2-39-work-dropdown.png"
-];
-
-function render(arr, target, isNew){
-  const g=document.getElementById(target);
-  arr.forEach(s=>{
-    const c=document.createElement('div'); c.className='card'+(isNew?' new':'');
-    const f=typeof s==='string'?s:s.f;
-    const t=typeof s==='string'?s:s.t;
-    c.innerHTML=`<img loading="lazy" src="${f}" alt="${f}"><div class="cap">${f}${t?'<br><b style="color:#2e7d32">'+t+'</b>':''}</div>`;
-    g.appendChild(c);
-  });
-}
-
-render(newShots, 'new', true);
-render(origShots, 'orig', false);
-</script>
-</body>
-</html>
+<html><head><meta charset="utf-8"><title>ForkPlus v3.9.0 验证截图（62张）</title>
+<style>body{font-family:sans-serif;background:#fafafa;margin:0}header{padding:16px;background:#24292e;color:#fff}
+header a{color:#9cf}main{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:12px}
+figure{margin:0;border:1px solid #ddd;background:#fff;border-radius:6px;overflow:hidden}img{width:100%;display:block}
+figcaption{font-size:11px;padding:4px 6px;color:#333;word-break:break-all}</style></head><body>
+<header><h1>ForkPlus v3.9.0 功能验证截图（62 张）</h1>
+<p>配套文档：<a href="源码映射.md">源码映射.md</a> · <a href="操作步骤.md">操作步骤.md</a> · <a href="验证报告.md">验证报告.md</a></p>
+<p>Ubuntu/Wine 环境运行原版 ForkPlus 的界面基线，供 Avalonia 跨平台重构逐页回归。</p></header><main>
+<figure><img loading="lazy" src="01-welcome-v390.png"><figcaption>01-welcome-v390.png</figcaption></figure>
+<figure><img loading="lazy" src="02-open-dialog.png"><figcaption>02-open-dialog.png</figcaption></figure>
+<figure><img loading="lazy" src="03-demo-graph.png"><figcaption>03-demo-graph.png</figcaption></figure>
+<figure><img loading="lazy" src="04-diff-tab.png"><figcaption>04-diff-tab.png</figcaption></figure>
+<figure><img loading="lazy" src="05-filetree-tab.png"><figcaption>05-filetree-tab.png</figcaption></figure>
+<figure><img loading="lazy" src="06-after-restart.png"><figcaption>06-after-restart.png</figcaption></figure>
+<figure><img loading="lazy" src="07-tooltip-check.png"><figcaption>07-tooltip-check.png</figcaption></figure>
+<figure><img loading="lazy" src="08-commit-ctx.png"><figcaption>08-commit-ctx.png</figcaption></figure>
+<figure><img loading="lazy" src="08-commit-ctx_000.png"><figcaption>08-commit-ctx_000.png</figcaption></figure>
+<figure><img loading="lazy" src="09-branch-ctx.png"><figcaption>09-branch-ctx.png</figcaption></figure>
+<figure><img loading="lazy" src="09-branch-ctx_000.png"><figcaption>09-branch-ctx_000.png</figcaption></figure>
+<figure><img loading="lazy" src="09-branch-ctx_001.png"><figcaption>09-branch-ctx_001.png</figcaption></figure>
+<figure><img loading="lazy" src="09-branch-ctx_002.png"><figcaption>09-branch-ctx_002.png</figcaption></figure>
+<figure><img loading="lazy" src="10-stash-ctx.png"><figcaption>10-stash-ctx.png</figcaption></figure>
+<figure><img loading="lazy" src="52-appearance-menu.png"><figcaption>52-appearance-menu.png</figcaption></figure>
+<figure><img loading="lazy" src="53-dark-theme-main.png"><figcaption>53-dark-theme-main.png</figcaption></figure>
+<figure><img loading="lazy" src="54-ai-assistant-unconfigured.png"><figcaption>54-ai-assistant-unconfigured.png</figcaption></figure>
+<figure><img loading="lazy" src="55-git-error-dialog.png"><figcaption>55-git-error-dialog.png</figcaption></figure>
+<figure><img loading="lazy" src="56-prefs-ai-enhancement.png"><figcaption>56-prefs-ai-enhancement.png</figcaption></figure>
+<figure><img loading="lazy" src="73-ctxmenu-filetree.png"><figcaption>73-ctxmenu-filetree.png</figcaption></figure>
+<figure><img loading="lazy" src="74-ctxmenu-commitgraph.png"><figcaption>74-ctxmenu-commitgraph.png</figcaption></figure>
+<figure><img loading="lazy" src="75-ctxmenu-sidebar-branch.png"><figcaption>75-ctxmenu-sidebar-branch.png</figcaption></figure>
+<figure><img loading="lazy" src="76-ctxmenu-sidebar-remote.png"><figcaption>76-ctxmenu-sidebar-remote.png</figcaption></figure>
+<figure><img loading="lazy" src="77-ctxmenu-sidebar-tag.png"><figcaption>77-ctxmenu-sidebar-tag.png</figcaption></figure>
+<figure><img loading="lazy" src="78-ctxmenu-sidebar-stash.png"><figcaption>78-ctxmenu-sidebar-stash.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-10-stash-ctx.png"><figcaption>v2-10-stash-ctx.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-11-commit-ctx.png"><figcaption>v2-11-commit-ctx.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-12-tags.png"><figcaption>v2-12-tags.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-13-submodule.png"><figcaption>v2-13-submodule.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-14-sidebar-expanded.png"><figcaption>v2-14-sidebar-expanded.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-15-origin-submodule.png"><figcaption>v2-15-origin-submodule.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-16-sidebar-full.png"><figcaption>v2-16-sidebar-full.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-17-local-changes.png"><figcaption>v2-17-local-changes.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-18-staged.png"><figcaption>v2-18-staged.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-18b-staged.png"><figcaption>v2-18b-staged.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-19-commit-msg.png"><figcaption>v2-19-commit-msg.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-20-after-commit.png"><figcaption>v2-20-after-commit.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-20b-after-commit.png"><figcaption>v2-20b-after-commit.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-21-after-pull.png"><figcaption>v2-21-after-pull.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-21-pull-dialog.png"><figcaption>v2-21-pull-dialog.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-22-pull-done.png"><figcaption>v2-22-pull-done.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-23-after-undo.png"><figcaption>v2-23-after-undo.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-23-undo-confirm.png"><figcaption>v2-23-undo-confirm.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-24-after-redo.png"><figcaption>v2-24-after-redo.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-24-undo-result.png"><figcaption>v2-24-undo-result.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-25-push-dialog.png"><figcaption>v2-25-push-dialog.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-25-redo-result.png"><figcaption>v2-25-redo-result.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-26-push-dialog.png"><figcaption>v2-26-push-dialog.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-27-push-done.png"><figcaption>v2-27-push-done.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-28-stash-dropdown.png"><figcaption>v2-28-stash-dropdown.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-29-new-branch.png"><figcaption>v2-29-new-branch.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-29b-recheck.png"><figcaption>v2-29b-recheck.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-30-new-branch.png"><figcaption>v2-30-new-branch.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-31-new-branch-filled.png"><figcaption>v2-31-new-branch-filled.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-32-branch-created.png"><figcaption>v2-32-branch-created.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-33-branch-created.png"><figcaption>v2-33-branch-created.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-34-new-tag.png"><figcaption>v2-34-new-tag.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-35-tag-created.png"><figcaption>v2-35-tag-created.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-36-tag-done.png"><figcaption>v2-36-tag-done.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-37-openwith.png"><figcaption>v2-37-openwith.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-38-console.png"><figcaption>v2-38-console.png</figcaption></figure>
+<figure><img loading="lazy" src="v2-39-work-dropdown.png"><figcaption>v2-39-work-dropdown.png</figcaption></figure>
+</main></body></html>

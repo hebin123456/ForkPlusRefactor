@@ -1,37 +1,37 @@
-# ForkPlus 运行验证（Linux / Wine 基准）
+# ForkPlus 跨平台（Avalonia）重构验证资料
 
-本目录存放 ForkPlus 原版 Windows 客户端在 Ubuntu + Wine 环境下的运行验证产物，用于 **Avalonia 跨平台迁移**的界面与行为对照基准。验证环境均为无图形界面的沙箱，借助 Wine 11 + Xvfb 虚拟显示启动原版，无需 Windows 真机。
+本目录存放 ForkPlus v3.9.0 在 **Ubuntu / Wine** 环境下运行原版客户端得到的**界面基线**，用于支撑后续迁移到 Avalonia 的逐页回归验证——不依赖 Windows 真机。
 
-## 当前内容
+## 目录结构
 
-- **v3.9.0**（推荐对照版本）
-  - 路径：[`v3.9.0/`](v3.9.0/)
-  - **56 张截图**（51 张功能覆盖 + 5 张本轮新增：外观菜单 / 深色主题 / AI 辅助开发 / Git 错误 / 偏好 AI 增强）
-  - [`验证报告.md`](v3.9.0/验证报告.md) — 环境、相对 v3.8.3 变化（3 个 commit）、WinRT 崩溃点、迁移价值
-  - [`操作步骤.md`](v3.9.0/操作步骤.md) — **每张新图的按钮位置、菜单路径、屏幕坐标**，方便代码重构对照
-  - [`index.html`](v3.9.0/index.html) — 缩略图索引，可本地浏览
+- `v3.9.0/` — v3.9.0 验证资料（主目录）
+  - `*.png`（**62 张**）— 功能截图，按编号分组
+  - `验证报告.md` — 验证结论、可复现环境、两处 WinRT 崩溃点补丁、截图映射、迁移对照价值
+  - `操作步骤.md` — 每张截图的操作路径（鼠标坐标 / 菜单路径 / 键盘操作）+ 环境限制与未覆盖项
+  - `源码映射.md` — **界面 → 代码文件 → 平台 API → Avalonia 替代**的精确映射（基于 v3.9.0 真实源码审计）
+  - `index.html` — 62 张图索引页
+- `README.md` — 本文件
 
-> v3.8.3 的旧截图已删除（保留历史 commit `5dcc31d1` 可查），由 v3.9.0 取代。
+## 三件套配合使用
 
-## 验证环境
+| 文档 | 回答的问题 |
+|------|------|
+| 截图（`*.png` + `index.html`） | 界面长什么样、点了什么 |
+| `操作步骤.md` | 怎么操作到的（按钮坐标、菜单路径、截图有效性说明） |
+| `源码映射.md` | 这段代码在哪、平台依赖是什么、Avalonia 端怎么替换 |
 
-```
-Ubuntu 22.04（无 GUI） + Wine 11.0 + Xvfb(:99)
-+ 手工拼装的 .NET 10 WindowsDesktop 运行时（NuGet 包）
-+ PortableGit + fontforge 字体伪装（Microsoft YaHei UI / Segoe UI / Consolas）
-+ Mono.Cecil IL 补丁（绕过两处 WinRT 系统主题调用）
-```
+## 关键发现（迁移前必读）
 
-## 关键结论
+- **v3.9.0 核心改动**：AI 辅助界面（WebView2 承载的流式 Markdown 渲染）统一重构——这是 Avalonia 迁移中替换成本最高的区域。
+- **最大利好**：Git 引擎 `biturbo`（libgit2 封装）已发布 **Windows / Linux / macOS 三平台原生库**，核心 Git 逻辑**无需重写**。
+- **架构接缝已存在**：`ServiceLocator` 已抽象 7 个平台接口（`IDispatcher`/`IClipboardService`/`IToastNotificationService`/`IWindowManagerService`/`IAppContext`/`IDesignModeService`/`ITimerService`），各有一个 `Wpf*` 实现——Avalonia 端只需补 `Avalonia*` 实现。
+- **最大替换成本**：WebView2 / AI 渲染、AvalonEdit、OxyPlot.Wpf、主题检测（UISettings + 注册表）、WindowsCredentialManager、Shell 集成、Git 路径硬编码（`git.exe`/`bash.exe`）。
+- **UI 工作量**：245 个 WPF `.xaml` 需做语法转换。
 
-- 原版可在纯 Linux 沙箱完整启动并跑通完整 Git 工作流。
-- 仅两处 WinRT 调用（系统主题感知）在 Wine 下需 IL 补丁绕过，真 Windows 无影响。
-- **v3.9.0 重点重构了 AI 辅助界面（WebView2 流式渲染）**——本轮新增的 5 张截图完整揭示：
-  - 偏好设置新增 7 个标签页（通用 / 提交 / **AI 增强** / Git / 集成 / 自定义命令 / 导入导出）
-  - AI 增强包含「AI 模型配置」与「技能系统」两大子系统
-  - 统一 AI 入口（工具栏 / 菜单 / 面板）汇总到"AI 尚未配置"检测
-  - 这是 Avalonia 迁移中**替换工作量最大**的区域
+## 使用方式
 
-## 用途
+打开 `v3.9.0/index.html` 浏览全部截图；重构某界面时，对照 `源码映射.md` 第 3 节的代码文件定位，按需阅读对应 `.xaml/.cs` 源码。
 
-迁移 Avalonia 时，可随时用该 Wine 环境启动原版截图，作为每个页面 / 交互的「标准答案」做像素级与行为级回归对比。每张新截图的「操作步骤」文档指出具体按钮位置，便于在新 UI 上复刻等价交互。
+## 环境
+
+Ubuntu 22.04 沙箱（无图形界面）+ Wine 11 + Xvfb(:99) + 手工拼装的 .NET 10 WindowsDesktop 运行时。可复现步骤见 `v3.9.0/验证报告.md` 第 3 节。
