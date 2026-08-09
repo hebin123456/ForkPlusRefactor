@@ -428,7 +428,7 @@ namespace ForkPlus.Avalonia.Markdown
 			return result;
 		}
 
-		private static Uri TryCreateUri(string url)
+		private static Uri? TryCreateUri(string url)
 		{
 			if (Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
 			{

@@ -41,12 +41,12 @@ namespace ForkPlus.Avalonia.Markdown
 			Children = children;
 		}
 
-		public static MdInline Text(string t) => new MdInline(MdInlineKind.Text, t, null, null);
-		public static MdInline Code(string t) => new MdInline(MdInlineKind.Code, t, null, null);
-		public static MdInline Link(string t, string url) => new MdInline(MdInlineKind.Link, t, url, null);
+		public static MdInline CreateText(string t) => new MdInline(MdInlineKind.Text, t, null, null);
+		public static MdInline CreateCode(string t) => new MdInline(MdInlineKind.Code, t, null, null);
+		public static MdInline CreateLink(string t, string url) => new MdInline(MdInlineKind.Link, t, url, null);
 
-		public static MdInline Bold(List<MdInline> children) => new MdInline(MdInlineKind.Bold, null, null, children);
-		public static MdInline Italic(List<MdInline> children) => new MdInline(MdInlineKind.Italic, null, null, children);
+		public static MdInline CreateBold(List<MdInline> children) => new MdInline(MdInlineKind.Bold, null, null, children);
+		public static MdInline CreateItalic(List<MdInline> children) => new MdInline(MdInlineKind.Italic, null, null, children);
 	}
 
 	#endregion
@@ -340,7 +340,7 @@ namespace ForkPlus.Avalonia.Markdown
 					if (close >= 0)
 					{
 						FlushText(result, buffer);
-						result.Add(MdInline.Code(text.Substring(i + 1, close - i - 1)));
+						result.Add(MdInline.CreateCode(text.Substring(i + 1, close - i - 1)));
 						i = close + 1;
 						continue;
 					}
@@ -353,7 +353,7 @@ namespace ForkPlus.Avalonia.Markdown
 					if (close >= 0)
 					{
 						FlushText(result, buffer);
-						result.Add(MdInline.Bold(ParseInlines(text.Substring(i + 2, close - i - 2))));
+						result.Add(MdInline.CreateBold(ParseInlines(text.Substring(i + 2, close - i - 2))));
 						i = close + 2;
 						continue;
 					}
@@ -366,7 +366,7 @@ namespace ForkPlus.Avalonia.Markdown
 					if (close >= 0)
 					{
 						FlushText(result, buffer);
-						result.Add(MdInline.Italic(ParseInlines(text.Substring(i + 1, close - i - 1))));
+						result.Add(MdInline.CreateItalic(ParseInlines(text.Substring(i + 1, close - i - 1))));
 						i = close + 1;
 						continue;
 					}
@@ -384,7 +384,7 @@ namespace ForkPlus.Avalonia.Markdown
 							FlushText(result, buffer);
 							string linkText = text.Substring(i + 1, closeBracket - i - 1);
 							string url = text.Substring(closeBracket + 2, closeParen - closeBracket - 2);
-							result.Add(MdInline.Link(linkText, url));
+							result.Add(MdInline.CreateLink(linkText, url));
 							i = closeParen + 1;
 							continue;
 						}
@@ -403,7 +403,7 @@ namespace ForkPlus.Avalonia.Markdown
 		{
 			if (buffer.Length > 0)
 			{
-				result.Add(MdInline.Text(buffer.ToString()));
+				result.Add(MdInline.CreateText(buffer.ToString()));
 				buffer.Clear();
 			}
 		}
