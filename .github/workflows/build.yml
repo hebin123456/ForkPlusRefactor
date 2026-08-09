@@ -21,3 +21,17 @@ jobs:
 
       - name: Build (Release)
         run: dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Test (xUnit + Avalonia Headless)
+        run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release

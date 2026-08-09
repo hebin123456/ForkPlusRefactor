@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ForkPlus.Avalonia.Tests</RootNamespace>
+    <AssemblyName>ForkPlus.Avalonia.Tests</AssemblyName>
+    <IsPublishable>false</IsPublishable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- Avalonia 12 无头 UI 测试基座（对标 P5：FlaUI → Avalonia UI 测试）。
+         12.1.1 与主体工程 Avalonia 版本严格对齐，避免双版本并存。 -->
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ForkPlus.Avalonia\ForkPlus.Avalonia.csproj" />
+  </ItemGroup>
+
+</Project>
