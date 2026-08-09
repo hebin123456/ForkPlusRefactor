@@ -12,7 +12,13 @@
   -->
   <Target Name="CoreCompile" DependsOnTargets="$(CoreCompileDependsOn)">
 
-    <Message Importance="high" Text="DBT_OVERRIDE_CC RUN TargetsTriggeredByCompilation=[$(TargetsTriggeredByCompilation)]" />
+    <!-- 实验：用干净值（无前导分号）并关闭共享编译，验证 .NET 10 Csc 的 in-Csc 触发是否恢复 -->
+    <PropertyGroup>
+      <TargetsTriggeredByCompilation>CompileAvaloniaXaml</TargetsTriggeredByCompilation>
+      <UseSharedCompilation>false</UseSharedCompilation>
+    </PropertyGroup>
+
+    <Message Importance="high" Text="DBT_OVERRIDE_CC RUN TargetsTriggeredByCompilation=[$(TargetsTriggeredByCompilation)] UseSharedCompilation=$(UseSharedCompilation)" />
 
     <Csc
         Sources="@(Compile)"
