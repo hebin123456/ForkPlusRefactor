@@ -40,10 +40,10 @@ jobs:
       - name: Test (xUnit + Avalonia Headless)
         run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release --logger "console;verbosity=normal" > test_output.txt 2>&1; echo $? > test_exit.txt
 
-      # 抓取失败/汇总相关行作为 ::error:: 注解（镜像 annotations API 可读）。
-      - name: Surface test output as annotations
+      # 仅把真正的失败行作为 ::error:: 注解发出（镜像 annotations API 可读），通过的不刷红。
+      - name: Surface failures as annotations
         if: always()
-        run: grep -niE "failed|assert|exception|expected:|actual:|failure|stack|nullreference|passed|total|tests" test_output.txt | head -n 50 | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
+        run: grep -niE "failed fork|assert\.|exception|expected:|actual:|nullreference|unhandled" test_output.txt | head -n 50 | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
 
       # 以 dotnet test 真实退出码作为门槛，避免 xunit v3 汇总格式差异导致误判。
       - name: Fail if tests did not pass
