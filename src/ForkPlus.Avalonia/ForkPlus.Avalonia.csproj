@@ -11,6 +11,8 @@
          的唯一途径（AvaloniaXamlLoader.Load(this) 在 12.1.1 恒抛异常，必须由 XamlX 改写为编译后 XAML IL）。 -->
     <EnableAvaloniaXamlCompilation>true</EnableAvaloniaXamlCompilation>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- 显式声明目标 RID，避免 dotnet publish -r mac-arm64 触发 NETSDK1083（RID 不在项目已知图中）。 -->
+    <RuntimeIdentifiers>win-x64;mac-arm64;linux-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>
