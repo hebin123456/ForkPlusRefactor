@@ -36,16 +36,15 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # 捕获 dotnet test 完整输出（含崩溃栈）；|| true 保证即使宿主崩溃也继续。
+      # 捕获 dotnet test 退出码（不靠脆弱的汇总文本匹配），输出落盘供注解回传。
       - name: Test (xUnit + Avalonia Headless)
-        run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release --logger "console;verbosity=detailed" > test_output.txt 2>&1 || true
+        run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release --logger "console;verbosity=normal" > test_output.txt 2>&1; echo $? > test_exit.txt
 
-      # 抓取失败相关行（不限位置，避免 tail 截断丢失更早的失败），head 控量防注解上限。
+      # 抓取失败/汇总相关行作为 ::error:: 注解（镜像 annotations API 可读）。
       - name: Surface test output as annotations
         if: always()
-        run: |
-          { grep -niE "failed |assert|exception|expected:|actual:|failure|stack|nullreference" test_output.txt | head -n 50; echo "---- SUMMARY ----"; grep -E "Passed!|Failed!|Total tests|Passed Fork|Failed Fork" test_output.txt | tail -n 20; } \
-            | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
+        run: grep -niE "failed|assert|exception|expected:|actual:|failure|stack|nullreference|passed|total|tests" test_output.txt | head -n 50 | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
 
+      # 以 dotnet test 真实退出码作为门槛，避免 xunit v3 汇总格式差异导致误判。
       - name: Fail if tests did not pass
-        run: grep -Eq "Passed!" test_output.txt && ! grep -Eq "Failed!" test_output.txt
+        run: test "$(cat test_exit.txt)" = "0"
