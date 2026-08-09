@@ -13,9 +13,10 @@ namespace ForkPlus.Services.AvaloniaImpl
 	///   WinRT UISettings.ColorValuesChanged（SystemThemeHelper）+ 注册表 AppsUseLightTheme（App.GetSystemTheme）
 	///   + SystemEvents.UserPreferenceChanged（App.SubscribeToUserPreferences）。
 	/// 具体映射：
-	///   - 读取系统明暗 → IPlatformSettings.GetColorValues().ThemeVariant（跨平台，对标注册表探测）
+	///   - 读取系统明暗 → Application.PlatformSettings.GetColorValues().ThemeVariant（跨平台，对标注册表探测）
 	///   - 系统主题变化事件 → Application.ActualThemeVariantChanged（跟随系统时随 OS 变化）+ IPlatformSettings.ColorValuesChanged
 	///   - 应用请求变体 → Application.RequestedThemeVariant（设为 ThemeVariant.Default 即「跟随系统」）
+	/// （Avalonia 12 的 PlatformThemeVariantManager 已不存在，系统主题改由 IPlatformSettings 暴露。）
 	/// </summary>
 	public class AvaloniaThemeService : IThemeService
 	{
@@ -24,8 +25,7 @@ namespace ForkPlus.Services.AvaloniaImpl
 		public ThemeVariant GetSystemThemeVariant()
 		{
 			// 读取 OS 系统主题变体（对标原 GetSystemTheme 读注册表 AppsUseLightTheme）
-			var settings = AvaloniaLocator.Current.GetService<IPlatformSettings>();
-			var platform = settings?.GetColorValues().ThemeVariant;
+			var platform = Application.Current?.PlatformSettings?.GetColorValues().ThemeVariant;
 			return platform switch
 			{
 				PlatformThemeVariant.Light => ThemeVariant.Light,
@@ -43,10 +43,12 @@ namespace ForkPlus.Services.AvaloniaImpl
 		public void StartSystemTracking()
 		{
 			if (Application.Current is { } app)
+			{
 				app.ActualThemeVariantChanged += OnActualThemeVariantChanged;
-			var settings = AvaloniaLocator.Current.GetService<IPlatformSettings>();
-			if (settings != null)
-				settings.ColorValuesChanged += OnColorValuesChanged;
+				var settings = app.PlatformSettings;
+				if (settings != null)
+					settings.ColorValuesChanged += OnColorValuesChanged;
+			}
 		}
 
 		private void OnActualThemeVariantChanged(object? sender, EventArgs e) => RaiseEvent();
