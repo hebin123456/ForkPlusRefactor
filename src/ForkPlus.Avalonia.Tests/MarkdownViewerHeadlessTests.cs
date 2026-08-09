@@ -2,7 +2,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.Markdown;
+using ForkPlus.Avalonia.Markdown;
 using Xunit;
 
 namespace ForkPlus.Avalonia.Tests;
