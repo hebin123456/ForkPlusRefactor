@@ -40,11 +40,11 @@ jobs:
       - name: Test (xUnit + Avalonia Headless)
         run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release --logger "console;verbosity=detailed" > test_output.txt 2>&1 || true
 
-      # 把崩溃关键字行 + 末尾作为 ::error:: 注解发出（镜像 annotations API 可读）。
+      # 把断言失败的关键行（Expected/Actual/Strings differ）作为 ::error:: 注解发出。
       - name: Surface test output as annotations
         if: always()
         run: |
-          { grep -niE "segmentation|core dumped|dllnotfound|skia|x11|exception|unhandled|stack trace|assert|failed!" test_output.txt | tail -n 80; echo "---- TAIL ----"; tail -n 50 test_output.txt; } \
+          { grep -niE "expected|actual|strings differ|assert\.equal|failure|position|differ" test_output.txt | tail -n 120; echo "---- TAIL ----"; tail -n 60 test_output.txt; } \
             | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
 
       - name: Fail if tests did not pass
