@@ -25,6 +25,7 @@ public partial class MainWindow : Window
 		ToastButton.Click += OnToastClicked;
 		DiffButton.Click += OnDiffClicked;
 		PlatformButton.Click += OnPlatformClicked;
+		AiMarkdownButton.Click += OnAiMarkdownClicked;
 	}
 
 	// Avalonia 12：InitializeComponent 必须由代码隐藏提供（内部调用 AvaloniaXamlLoader.Load(this)），
@@ -93,5 +94,13 @@ public void Reset()
 	{
 		new PlatformServicesDemoWindow().Show();
 		StatusText.Text = "已打开平台服务 Demo (P3)：主题检测 / 凭据管理 / 文件对话框。";
+	}
+
+	// P4：打开 AI Markdown 渲染演示窗口，用自研零依赖 AvaloniaMarkdownViewer
+	// 替代原 WPF 的 WebView2 渲染层（流式 AI 文本 / 长文档 / 错误兜底 / 主题跟随）。
+	private void OnAiMarkdownClicked(object? sender, RoutedEventArgs e)
+	{
+		new AiMarkdownDemoWindow().Show();
+		StatusText.Text = "已打开 AI Markdown 渲染 Demo (P4)。";
 	}
 }

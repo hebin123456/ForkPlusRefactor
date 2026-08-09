@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:md="clr-namespace:ForkPlus.Avalonia.Markdown"
+        x:Class="ForkPlus.Avalonia.AiMarkdownDemoWindow"
+        Title="AI Markdown 渲染 Demo (P4)"
+        Width="860" Height="660">
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+      <Button x:Name="StreamButton" Content="流式 AI 文本（模拟）"/>
+      <Button x:Name="DocButton" Content="Git mm 参考文档"/>
+      <Button x:Name="ErrorButton" Content="显示错误兜底"/>
+      <Button x:Name="ThemeButton" Content="切换明暗主题"/>
+      <Button x:Name="ClearButton" Content="清空"/>
+    </StackPanel>
+    <TextBlock DockPanel.Dock="Bottom" x:Name="StatusText" Margin="0,8,0,0" TextWrapping="Wrap"
+               Text="点击下方按钮体验：流式 AI 输出、长文档渲染、错误兜底、主题跟随（替代原 WPF 的 WebView2 渲染层）。"/>
+    <md:AvaloniaMarkdownViewer x:Name="Viewer"/>
+  </DockPanel>
+</Window>

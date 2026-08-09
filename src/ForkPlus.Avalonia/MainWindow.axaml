@@ -17,6 +17,7 @@
       <Button x:Name="ToastButton" Content="测试 IToastNotificationService"/>
       <Button x:Name="DiffButton" Content="差异对比 Demo (P2)"/>
       <Button x:Name="PlatformButton" Content="平台服务 Demo (P3)"/>
+      <Button x:Name="AiMarkdownButton" Content="AI Markdown 渲染 Demo (P4)"/>
     </StackPanel>
     <TextBlock x:Name="StatusText" Opacity="0.7" Margin="0,8,0,0"/>
   </StackPanel>
