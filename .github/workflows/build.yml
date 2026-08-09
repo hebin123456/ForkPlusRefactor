@@ -1,0 +1,26 @@
+name: Build
+
+# 每次向 main 推送、或开 PR 到 main 时，构建 Avalonia 迁移工程，确保跨平台可编译。
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj
+
+      - name: Build (Release)
+        run: dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release

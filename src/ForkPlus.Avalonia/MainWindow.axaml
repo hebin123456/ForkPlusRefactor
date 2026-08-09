@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ForkPlus.Avalonia.MainWindow"
+        Title="ForkPlus (Avalonia — 迁移起点)"
+        Width="860" Height="600">
+  <StackPanel Margin="24" Spacing="10">
+    <TextBlock FontSize="24" FontWeight="Bold">ForkPlus · Avalonia 跨平台迁移起点</TextBlock>
+    <TextBlock TextWrapping="Wrap" Opacity="0.85">
+      这是 ForkPlus 从 WPF 迁移到 Avalonia 的第一个可构建骨架。下方展示已接入的 7 个跨平台服务
+      （原 WPF 工程 ServiceLocator 的接缝）。后续 UI 将逐步从 ForkPlus 的 245 个 XAML 搬运到此处。
+    </TextBlock>
+    <Border Background="#1e1e1e" CornerRadius="6" Padding="12" Margin="0,8,0,0">
+      <TextBlock x:Name="ServicesText" TextWrapping="Wrap" />
+    </Border>
+    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+      <Button x:Name="CopyButton" Content="测试 IClipboardService"/>
+      <Button x:Name="ToastButton" Content="测试 IToastNotificationService"/>
+    </StackPanel>
+    <TextBlock x:Name="StatusText" Opacity="0.7" Margin="0,8,0,0"/>
+  </StackPanel>
+</Window>
