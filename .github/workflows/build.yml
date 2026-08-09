@@ -16,14 +16,29 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Dump SDK CoreCompile / TargetsTriggeredByCompilation
+        run: |
+          SDK=$(dotnet --list-sdks --print-path 2>/dev/null | head -1)
+          echo "SDK=$SDK"
+          F=$(find "$SDK" -name 'Microsoft.CSharp.CurrentVersion.targets' 2>/dev/null | head -1)
+          echo "FILE=$F"
+          echo "::error::TTBC_COUNT=$(grep -c 'TargetsTriggeredByCompilation' "$F" 2>/dev/null)"
+          grep -n -B2 -A2 'TargetsTriggeredByCompilation' "$F" 2>/dev/null | head -40 | while IFS= read -r l; do echo "::error::SDK_TTBC $l"; done
+          grep -n 'CallTarget Targets="$(TargetsTriggeredByCompilation)"' "$F" 2>/dev/null | head | while IFS= read -r l; do echo "::error::SDK_CALL $l"; done
+
       - name: Restore
         run: dotnet restore src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj
 
-      - name: Build (Release)
-        run: dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release
+      - name: Build (Release, diag)
+        run: |
+          set -o pipefail
+          dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release -v diag 2>&1 | tee /tmp/build.log
 
       - name: Diagnostics
         if: always()
         run: |
-          echo "::error::GCS_FILES=$(find src/ForkPlus.Avalonia/obj -name '*.g.cs' 2>/dev/null | tr '\n' ' ')"
-          echo "::error::BUILD_DONE"
+          echo "::error::CAX_EXEC=$(grep -c 'Target "CompileAvaloniaXaml"' /tmp/build.log 2>/dev/null)"
+          echo "::error::CSC_TTBC=$(grep -c 'TargetsTriggeredByCompilation' /tmp/build.log 2>/dev/null)"
+          grep -iE 'Task "Csc"' /tmp/build.log | head -5 | while IFS= read -r l; do echo "::error::CSC $l"; done
+          grep -iE 'error CS|error MSB|CompileAvaloniaXamlTask|Exception' /tmp/build.log | head -20 | while IFS= read -r l; do echo "::error::ERR $l"; done
+          tail -8 /tmp/build.log | while IFS= read -r l; do echo "::error::TAIL $l"; done
