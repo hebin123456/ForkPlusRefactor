@@ -5,6 +5,7 @@ using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -414,31 +415,19 @@ namespace ForkPlus.Avalonia.Markdown
 						result.Add(italic);
 						break;
 					case MdInlineKind.Link:
-						var hyperlink = new Hyperlink
+						// Avalonia 12 文本内联既无公开的 Hyperlink 也无 InlineUIContainer（无法在文本流中
+						// 嵌入可点击 UI）。链接渲染为蓝色下划线文本作视觉提示；LinkClicked 事件保留，
+						// 待 Avalonia 支持内联可点击元素或业务层接入导航时启用。
+						result.Add(new Run
 						{
+							Text = inline.Text,
 							Foreground = new SolidColorBrush(link),
-							NavigateUri = TryCreateUri(inline.Url)
-						};
-						hyperlink.Inlines.Add(new Run { Text = inline.Text });
-						hyperlink.Click += (_, _) => LinkClicked?.Invoke(inline.Url);
-						result.Add(hyperlink);
+							TextDecorations = TextDecorations.Underline
+						});
 						break;
 				}
 			}
 			return result;
-		}
-
-		private static Uri? TryCreateUri(string url)
-		{
-			if (Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
-			{
-				return uri;
-			}
-			if (Uri.TryCreate(url, UriKind.Relative, out uri))
-			{
-				return uri;
-			}
-			return null;
 		}
 
 		#endregion

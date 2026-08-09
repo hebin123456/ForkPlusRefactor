@@ -456,7 +456,7 @@ namespace ForkPlus.Avalonia.Markdown
 			var result = new List<MdInline>();
 			foreach (string cell in cells)
 			{
-				result.Add(ParseInlines(cell.Trim()));
+				result.AddRange(ParseInlines(cell.Trim()));
 			}
 			return result;
 		}
