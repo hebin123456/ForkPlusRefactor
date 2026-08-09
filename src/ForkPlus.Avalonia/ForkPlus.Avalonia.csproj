@@ -20,8 +20,8 @@
 
   <!-- TEMP diagnostic: remove after XAML compilation gap is closed -->
   <Target Name="DiagAvaloniaXaml" BeforeTargets="GenerateAvaloniaResources;CompileAvaloniaXaml;CoreCompile">
-    <Message Text="DIAGPROP EnableAvaloniaXamlCompilation='$(EnableAvaloniaXamlCompilation)' _AvaloniaSkipXamlCompilation='$(_AvaloniaSkipXamlCompilation)' AvaloniaNameGeneratorBehavior='$(AvaloniaNameGeneratorBehavior)' AvaloniaXamlIlEnabled='$(AvaloniaXamlIlEnabled)'" Importance="high" />
-    <Message Text="DIAGITEMS AvaloniaXaml='@(AvaloniaXaml)'" Importance="high" />
+    <Message Text="DIAGPROP EnableAvaloniaXamlCompilation='$(EnableAvaloniaXamlCompilation)' _AvaloniaSkipXamlCompilation='$(_AvaloniaSkipXamlCompilation)' DesignTimeBuild='$(DesignTimeBuild)' AvaloniaNameGeneratorBehavior='$(AvaloniaNameGeneratorBehavior)'" Importance="high" />
+    <Message Text="DIAGITEMS AvaloniaXaml.Count=@(AvaloniaXaml->Count()) AvaloniaResource.Count=@(AvaloniaResource->Count())" Importance="high" />
   </Target>
 
 </Project>
