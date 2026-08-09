@@ -359,18 +359,19 @@ namespace ForkPlus.Avalonia.Markdown
 					}
 				}
 
-				// 斜体 *
-				if (c == '*')
+			// 斜体 *（注意：下一个字符也是 '*' 时属于加粗开头，已由上方加粗分支处理；
+			// 若加粗未闭合，此处不应把它当作空斜体把标记吞掉，而是作为字面量保留）
+			if (c == '*' && !(i + 1 < text.Length && text[i + 1] == '*'))
+			{
+				int close = text.IndexOf('*', i + 1);
+				if (close >= 0)
 				{
-					int close = text.IndexOf('*', i + 1);
-					if (close >= 0)
-					{
-						FlushText(result, buffer);
-						result.Add(MdInline.CreateItalic(ParseInlines(text.Substring(i + 1, close - i - 1))));
-						i = close + 1;
-						continue;
-					}
+					FlushText(result, buffer);
+					result.Add(MdInline.CreateItalic(ParseInlines(text.Substring(i + 1, close - i - 1))));
+					i = close + 1;
+					continue;
 				}
+			}
 
 				// 链接 [text](url)
 				if (c == '[')
