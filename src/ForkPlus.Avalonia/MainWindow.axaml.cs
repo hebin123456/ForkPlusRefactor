@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using ForkPlus.Avalonia.Diff;
 using ForkPlus.Services;
 
 namespace ForkPlus.Avalonia;
@@ -22,6 +23,7 @@ public partial class MainWindow : Window
 
 		CopyButton.Click += OnCopyClicked;
 		ToastButton.Click += OnToastClicked;
+		DiffButton.Click += OnDiffClicked;
 	}
 
 	// Avalonia 12：InitializeComponent 必须由代码隐藏提供（内部调用 AvaloniaXamlLoader.Load(this)），
@@ -46,5 +48,41 @@ public partial class MainWindow : Window
 			"<text>Avalonia 通知服务已接入（WinRT Toast XML 被解析显示）</text>" +
 			"</binding></visual></toast>");
 		StatusText.Text = "已通过 IToastNotificationService 显示 in-app 浮层。";
+	}
+
+	// P2 PoC：用跨平台 LCS 算法（对标 ForkPlus 经 biturbo 计算的 BtPatchToken）生成
+	// DiffResult，再交给 AvaloniaEdit 视图渲染带色差异。biturbo 为原生 Windows 库，
+	// 此处用同构的纯托管实现以便跨平台运行。
+	private void OnDiffClicked(object? sender, RoutedEventArgs e)
+	{
+		const string oldText =
+@"public int Add(int a, int b)
+{
+    return a + b;
+}
+
+public void Log(string message)
+{
+    Console.WriteLine(message);
+}";
+		const string newText =
+@"public int Add(int a, int b)
+{
+    // 支持更大的数值范围
+    return checked(a + b);
+}
+
+public void Log(string message)
+{
+    Logger.Info(message);
+}
+
+public void Reset()
+{
+    Logger.Clear();
+}";
+		var result = LineDiff.Compute(oldText, newText, "a/Calculator.cs", "b/Calculator.cs");
+		new DiffWindow(result).Show();
+		StatusText.Text = $"已打开差异对比：{result.Lines.Count} 行（绿=新增，红=删除）。";
 	}
 }
