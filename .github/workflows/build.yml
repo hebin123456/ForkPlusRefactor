@@ -19,15 +19,5 @@ jobs:
       - name: Restore
         run: dotnet restore src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj
 
-      - name: Build (Release, diag)
-        run: |
-          set -o pipefail
-          dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release -v diag 2>&1 | tee /tmp/build.log
-
-      - name: Diagnostics
-        if: always()
-        run: |
-          echo "::error::CAX_EXEC=$(grep -c 'Target "CompileAvaloniaXaml"' /tmp/build.log 2>/dev/null)"
-          echo "::error::XAMLX_MSG=$(grep -c 'DBT_XAMLX' /tmp/build.log 2>/dev/null)"
-          echo "::error::BUILD_OK=$(grep -cE 'Build succeeded|0 Error' /tmp/build.log 2>/dev/null)"
-          echo "::error::FIRST_ERR=$(grep -m1 -E 'error CS[0-9]+' /tmp/build.log 2>/dev/null | head -c 200)"
+      - name: Build (Release)
+        run: dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release
