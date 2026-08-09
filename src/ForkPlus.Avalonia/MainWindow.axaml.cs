@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
 using ForkPlus.Services;
 
 namespace ForkPlus.Avalonia;
@@ -9,7 +10,6 @@ public partial class MainWindow : Window
 	public MainWindow()
 	{
 		InitializeComponent();
-
 		var ac = ServiceLocator.AppContext;
 		ServicesText.Text =
 			"已接入的跨平台服务（ServiceLocator）：\n" +
@@ -22,6 +22,13 @@ public partial class MainWindow : Window
 
 		CopyButton.Click += OnCopyClicked;
 		ToastButton.Click += OnToastClicked;
+	}
+
+	// Avalonia 12：InitializeComponent 必须由代码隐藏提供（内部调用 AvaloniaXamlLoader.Load(this)），
+	// 编译期由 XamlX（CompileAvaloniaXaml）把该 Load(this) 调用补丁为编译后的 XAML IL。
+	public void InitializeComponent()
+	{
+		AvaloniaXamlLoader.Load(this);
 	}
 
 	private void OnCopyClicked(object? sender, RoutedEventArgs e)

@@ -7,15 +7,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>ForkPlus.Avalonia</RootNamespace>
     <AssemblyName>ForkPlus.Avalonia</AssemblyName>
-    <!-- XamlX IL 编译（EnableAvaloniaXamlCompilation=true）是 Avalonia 12 生成 InitializeComponent
-         的唯一途径（AvaloniaXamlLoader.Load 在 12.1.1 已改为抛异常）。该编译由 Csc 通过
-         TargetsTriggeredByCompilation 触发 CompileAvaloniaXaml 目标完成。 -->
+    <!-- XamlX IL 编译（EnableAvaloniaXamlCompilation=true）是 Avalonia 12 生成并补丁 InitializeComponent
+         的唯一途径（AvaloniaXamlLoader.Load(this) 在 12.1.1 恒抛异常，必须由 XamlX 改写为编译后 XAML IL）。 -->
     <EnableAvaloniaXamlCompilation>true</EnableAvaloniaXamlCompilation>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <!-- 覆盖 CoreCompile 以透传 TargetsTriggeredByCompilation（详见 OverrideCoreCompile.targets）。
-         必须用 CustomAfterMicrosoftCommonTargets，因为 SDK 的 CoreCompile 在项目内容之后导入，
-         直接在 csproj 里重定义会被 SDK 版本覆盖（后定义优先）。 -->
-    <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory)OverrideCoreCompile.targets</CustomAfterMicrosoftCommonTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,5 +19,23 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
   </ItemGroup>
+
+  <!--
+    WORKAROUND（与具体 .NET 10 SDK 版本无关）：
+    .NET 10 的 Csc 任务不再触发 TargetsTriggeredByCompilation，导致 CompileAvaloniaXaml（XamlX）
+    永远无法在 CoreCompile 期间运行（已多次在 CI 中确认 CAX_EXEC=0）。
+    这里在 CoreCompile 之后显式调用 CompileAvaloniaXaml：此时项目程序集已生成，XamlX 用 Cecil
+    直接把代码隐藏里 InitializeComponent() 的 AvaloniaXamlLoader.Load(this) 改写为编译后的 XAML IL，
+    并写回同一程序集。无需 in-Csc 的二次编译。
+  -->
+  <Target Name="RunAvaloniaXamlCompilation" AfterTargets="CoreCompile">
+    <Message Importance="high" Text="DBT_XAMLX: running CompileAvaloniaXaml after CoreCompile; IA=$(IntermediateAssembly)" />
+    <ItemGroup>
+      <IntermediateAssembly Update="@(IntermediateAssembly)">
+        <AvaloniaCompileOutput>%(Identity)</AvaloniaCompileOutput>
+      </IntermediateAssembly>
+    </ItemGroup>
+    <CallTarget Targets="CompileAvaloniaXaml" />
+  </Target>
 
 </Project>

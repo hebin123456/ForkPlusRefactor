@@ -28,7 +28,6 @@ jobs:
         if: always()
         run: |
           echo "::error::CAX_EXEC=$(grep -c 'Target "CompileAvaloniaXaml"' /tmp/build.log 2>/dev/null)"
-          echo "::error::GCS_FILES=$(grep -oE 'GeneratedFiles/[^ ]+\.g\.cs' /tmp/build.log | sort -u | tr '\n' '|' 2>/dev/null)"
+          echo "::error::XAMLX_MSG=$(grep -c 'DBT_XAMLX' /tmp/build.log 2>/dev/null)"
           echo "::error::BUILD_OK=$(grep -cE 'Build succeeded|0 Error' /tmp/build.log 2>/dev/null)"
-          echo "::error::OVERRIDE_CC=$(grep -c 'DBT_OVERRIDE_CC' /tmp/build.log 2>/dev/null)"
-          echo "::error::TTBC_VAL=$(grep -oE 'DBT_OVERRIDE_CC RUN TargetsTriggeredByCompilation=\[[^]]*\]' /tmp/build.log | head -1 2>/dev/null)"
+          echo "::error::FIRST_ERR=$(grep -m1 -E 'error CS[0-9]+' /tmp/build.log 2>/dev/null | head -c 200)"
