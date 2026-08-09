@@ -1,27 +1,29 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using ForkPlus.Services;
 
 namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 跨平台文件/目录对话框实现（对标原 WPF 工程 ForkPlus/UI/OpenDialog）。
-	/// 用 Avalonia 原生 OpenFolderDialog / OpenFileDialog / SaveFileDialog 替代 Windows API Code Pack，
-	/// 方法签名与行为一一对应，并模态于传入的父窗口（ShowAsync(parent)）。
+	/// 用 Avalonia 12 的 <see cref="IStorageProvider"/>（TopLevel.StorageProvider）替代 Windows API Code Pack 的
+	/// CommonOpenFileDialog / CommonSaveFileDialog；方法签名与行为一一对应，并模态于传入的父窗口。
+	/// 注意：Avalonia 12 已移除旧版 OpenFileDialog/SaveFileDialog/OpenFolderDialog，统一改用 IStorageProvider。
 	/// </summary>
 	public class AvaloniaFileDialogService : IFileDialogService
 	{
 		public async Task<string?> SelectDirectoryAsync(Window? parent, string title, string? initialDirectory)
 		{
-			var dlg = new OpenFolderDialog
-			{
-				Title = title,
-				Directory = initialDirectory
-			};
-			return await dlg.ShowAsync(parent);
+			var provider = Provider(parent);
+			if (provider == null)
+				return null;
+			var folders = await provider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = title, AllowMultiple = false });
+			return folders.FirstOrDefault()?.TryGetLocalPath();
 		}
 
 		public async Task<string?> SelectExecutableFileAsync(Window? parent, string title, string? initialDirectory)
@@ -29,34 +31,38 @@ namespace ForkPlus.Services.AvaloniaImpl
 
 		public async Task<string?> SelectFileAsync(Window? parent, string title, string? initialDirectory, string fileTypeName, string extensionPattern)
 		{
-			var dlg = new OpenFileDialog
+			var provider = Provider(parent);
+			if (provider == null)
+				return null;
+			var ext = NormalizeExt(extensionPattern);
+			var files = await provider.OpenFilePickerAsync(new FilePickerOpenOptions
 			{
 				Title = title,
-				Directory = initialDirectory,
 				AllowMultiple = false,
-				Filters = new List<FileDialogFilter>
+				FileTypeFilter = new List<FilePickerFileType>
 				{
-					new FileDialogFilter { Name = fileTypeName, Extensions = new List<string> { NormalizeExt(extensionPattern) } }
+					new FilePickerFileType(fileTypeName) { Patterns = new List<string> { ext } }
 				}
-			};
-			var result = await dlg.ShowAsync(parent);
-			return result?.FirstOrDefault();
+			});
+			return files.FirstOrDefault()?.TryGetLocalPath();
 		}
 
 		public async Task<string?> SelectPatchSaveLocationAsync(Window? parent, string title, string? initialDirectory, string defaultFileName)
 		{
-			var dlg = new SaveFileDialog
+			var provider = Provider(parent);
+			if (provider == null)
+				return null;
+			var file = await provider.SaveFilePickerAsync(new FilePickerSaveOptions
 			{
 				Title = title,
-				Directory = initialDirectory,
-				InitialFileName = defaultFileName,
+				SuggestedFileName = defaultFileName,
 				DefaultExtension = "patch",
-				Filters = new List<FileDialogFilter>
+				FileTypeChoices = new List<FilePickerFileType>
 				{
-					new FileDialogFilter { Name = "Patches", Extensions = new List<string> { "patch" } }
+					new FilePickerFileType("Patches") { Patterns = new List<string> { "patch" } }
 				}
-			};
-			var path = await dlg.ShowAsync(parent);
+			});
+			var path = file?.TryGetLocalPath();
 			if (path != null && !path.EndsWith(".patch", StringComparison.OrdinalIgnoreCase))
 				path += ".patch";
 			return path;
@@ -64,20 +70,24 @@ namespace ForkPlus.Services.AvaloniaImpl
 
 		public async Task<string?> SelectFileSaveLocationAsync(Window? parent, string title, string? initialDirectory, string defaultFileName)
 		{
+			var provider = Provider(parent);
+			if (provider == null)
+				return null;
 			var ext = Path.GetExtension(defaultFileName).TrimStart('.');
-			var dlg = new SaveFileDialog
+			var file = await provider.SaveFilePickerAsync(new FilePickerSaveOptions
 			{
 				Title = title,
-				Directory = initialDirectory,
-				InitialFileName = defaultFileName,
+				SuggestedFileName = defaultFileName,
 				DefaultExtension = ext,
-				Filters = new List<FileDialogFilter>
+				FileTypeChoices = new List<FilePickerFileType>
 				{
-					new FileDialogFilter { Name = $"*{ext} files", Extensions = new List<string> { ext } }
+					new FilePickerFileType($"*{ext} files") { Patterns = new List<string> { ext } }
 				}
-			};
-			return await dlg.ShowAsync(parent);
+			});
+			return file?.TryGetLocalPath();
 		}
+
+		private static IStorageProvider? Provider(Window? parent) => parent?.StorageProvider;
 
 		private static string NormalizeExt(string pattern)
 		{

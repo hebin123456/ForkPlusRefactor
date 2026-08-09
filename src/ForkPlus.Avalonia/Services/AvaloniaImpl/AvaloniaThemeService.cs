@@ -1,5 +1,6 @@
 using System;
 using Avalonia;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using ForkPlus.Services;
@@ -8,10 +9,13 @@ namespace ForkPlus.Services.AvaloniaImpl
 {
 	/// <summary>
 	/// 跨平台主题服务实现。
-	/// 用 Avalonia 原生 <see cref="Avalonia.Styling.PlatformThemeVariantManager"/> 一次性替代原 WPF 工程的三套机制：
+	/// 用 Avalonia 原生能力一次性替代原 WPF 工程的三套机制：
 	///   WinRT UISettings.ColorValuesChanged（SystemThemeHelper）+ 注册表 AppsUseLightTheme（App.GetSystemTheme）
 	///   + SystemEvents.UserPreferenceChanged（App.SubscribeToUserPreferences）。
-	/// 事件回调统一在 UI 线程派发（对标原 UiSettings_ColorValuesChanged 经 Dispatcher.Invoke 调 Theme.Refresh）。
+	/// 具体映射：
+	///   - 读取系统明暗 → IPlatformSettings.GetColorValues().ThemeVariant（跨平台，对标注册表探测）
+	///   - 系统主题变化事件 → Application.ActualThemeVariantChanged（跟随系统时随 OS 变化）+ IPlatformSettings.ColorValuesChanged
+	///   - 应用请求变体 → Application.RequestedThemeVariant（设为 ThemeVariant.Default 即「跟随系统」）
 	/// </summary>
 	public class AvaloniaThemeService : IThemeService
 	{
@@ -19,10 +23,15 @@ namespace ForkPlus.Services.AvaloniaImpl
 
 		public ThemeVariant GetSystemThemeVariant()
 		{
-			var v = PlatformThemeVariantManager.Current?.ThemeVariant;
-			if (v == null)
-				v = Application.Current?.ActualThemeVariant ?? ThemeVariant.Light;
-			return v;
+			// 读取 OS 系统主题变体（对标原 GetSystemTheme 读注册表 AppsUseLightTheme）
+			var settings = AvaloniaLocator.Current.GetService<IPlatformSettings>();
+			var platform = settings?.GetColorValues().ThemeVariant;
+			return platform switch
+			{
+				PlatformThemeVariant.Light => ThemeVariant.Light,
+				PlatformThemeVariant.Dark => ThemeVariant.Dark,
+				_ => Application.Current?.ActualThemeVariant ?? ThemeVariant.Light
+			};
 		}
 
 		public void SetRequestedThemeVariant(ThemeVariant variant)
@@ -33,13 +42,21 @@ namespace ForkPlus.Services.AvaloniaImpl
 
 		public void StartSystemTracking()
 		{
-			PlatformThemeVariantManager.ThemeVariantChanged += OnPlatformThemeVariantChanged;
+			if (Application.Current is { } app)
+				app.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+			var settings = AvaloniaLocator.Current.GetService<IPlatformSettings>();
+			if (settings != null)
+				settings.ColorValuesChanged += OnColorValuesChanged;
 		}
 
-		private void OnPlatformThemeVariantChanged(object? sender, EventArgs e)
+		private void OnActualThemeVariantChanged(object? sender, EventArgs e) => RaiseEvent();
+
+		private void OnColorValuesChanged(object? sender, PlatformColorValues e) => RaiseEvent();
+
+		private void RaiseEvent()
 		{
-			var variant = GetSystemThemeVariant();
 			// 在 UI 线程回调，对标原 WPF：UiSettings_ColorValuesChanged -> Dispatcher.Invoke(Theme.Refresh)
+			var variant = GetSystemThemeVariant();
 			Dispatcher.UIThread.Post(() => SystemThemeVariantChanged?.Invoke(this, variant));
 		}
 	}
