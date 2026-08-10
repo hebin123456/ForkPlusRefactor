@@ -49,6 +49,35 @@ jobs:
       - name: Fail if tests did not pass
         run: test "$(cat test_exit.txt)" = "0"
 
+  # M0：biturbo 原生库三平台加载验证。单独 matrix 在 win/ubuntu/mac 各跑一次
+  # BiturboSmokeTests（plain [Fact]，不依赖 Avalonia headless 上下文），证明
+  # biturbo.dll / libbiturbo.so / libbiturbo.dylib 在三个 OS 都能被 DllImportResolver 加载。
+  # 与 test 作业（ubuntu 全量）解耦，避免 headless UI 测试的跨平台差异干扰核心引擎验证。
+  biturbo-smoke:
+    runs-on: ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Biturbo smoke (native lib loads on this OS)
+        run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release --filter "FullyQualifiedName~BiturboSmokeTests" --logger "console;verbosity=normal" > smoke_output.txt 2>&1; echo $? > smoke_exit.txt
+
+      - name: Surface failures as annotations
+        if: always()
+        run: grep -niE "failed fork|assert\.|exception|expected:|actual:|nullreference|unhandled|error cs|dllnotfound|avalonia is not" smoke_output.txt | head -n 50 | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
+
+      - name: Fail if smoke test did not pass
+        run: test "$(cat smoke_exit.txt)" = "0"
+
   # P5：三平台自包含单文件发布（Avalonia 单文件方案），产物作为 artifact 供下载。
   publish:
     runs-on: ubuntu-latest
