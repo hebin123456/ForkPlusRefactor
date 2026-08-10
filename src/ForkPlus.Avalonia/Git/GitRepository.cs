@@ -28,7 +28,7 @@ public sealed class GitRepository : IDisposable
 		EnsureNotDisposed();
 		string gitDir = ResolveGitDir(_repoPath);
 		BtReferences refs = default;
-		BtResult result = Bt.bt_get_references(gitDir, skipTags: false, ref refs);
+		BtResult result = Bt.bt_get_references(gitDir, skip_tags: false, ref refs);
 		if (result != BtResult.Ok)
 		{
 			string msg = ReadLastErrorMessage();
