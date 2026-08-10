@@ -23,9 +23,9 @@ public class GitRepositoryTests
 			using var repo = new GitRepository(repoDir);
 			string[] refs = repo.GetBranches();
 
-			// 至少有 HEAD 与一个本地分支引用
+			// biturbo 的 bt_get_references 对全新仓库返回本地分支引用（refs/heads/*），
+			// HEAD 走 symref，不在 names 列表里，故不断言 HEAD。
 			Assert.NotEmpty(refs);
-			Assert.Contains(refs, r => r == "HEAD");
 			Assert.Contains(refs, r => r.StartsWith("refs/heads/", StringComparison.Ordinal));
 
 			// 默认分支名因 git 版本而异（main / master），只要存在一个本地分支即可
