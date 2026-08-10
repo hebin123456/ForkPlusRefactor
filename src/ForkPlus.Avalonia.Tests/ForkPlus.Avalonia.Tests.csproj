@@ -29,4 +29,25 @@
     <ProjectReference Include="..\ForkPlus.Avalonia\ForkPlus.Avalonia.csproj" />
   </ItemGroup>
 
+  <!-- M0: biturbo 原生库三平台接线（与主工程一致）。
+       冒烟测试 BiturboSmokeTests 在测试 bin 里调用 Bt.bt_oid_from_str，需要原生库位于测试输出目录，
+       故测试工程也要下载并拷贝（third_party 路径相对测试 csproj 同为主仓库根）。-->
+  <Target Name="RestoreBiturbo" BeforeTargets="Build">
+    <PropertyGroup>
+      <BiturboBaseUrl>https://github.com/hebin123456/Biturbo/releases/latest/download</BiturboBaseUrl>
+    </PropertyGroup>
+    <Exec Condition="'$(OS)' == 'Windows_NT' And !Exists('..\..\third_party\biturbo.dll')"
+          ContinueOnError="true"
+          Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; New-Item -ItemType Directory -Force -Path '..\..\third_party' | Out-Null; Invoke-WebRequest -Uri '$(BiturboBaseUrl)/biturbo.dll' -OutFile '..\..\third_party\biturbo.dll'; Write-Host 'Restored biturbo.dll from Biturbo latest release'&quot;" />
+    <Exec Condition="'$(OS)' == 'Unix' And !Exists('..\..\third_party\libbiturbo.so') And !Exists('..\..\third_party\libbiturbo.dylib')"
+          ContinueOnError="true"
+          Command="bash -c 'set -e; mkdir -p ../../third_party; os=`uname -s`; if [ &quot;$os&quot; = &quot;Darwin&quot; ]; then url=&quot;$(BiturboBaseUrl)/libbiturbo.dylib&quot;; out=&quot;../../third_party/libbiturbo.dylib&quot;; else url=&quot;$(BiturboBaseUrl)/libbiturbo.so&quot;; out=&quot;../../third_party/libbiturbo.so&quot;; fi; curl -fsSL &quot;$url&quot; -o &quot;$out&quot;; echo &quot;Restored $out from Biturbo latest release&quot;'" />
+  </Target>
+
+  <Target Name="CopyBiturboToOutput" AfterTargets="Build">
+    <Copy SourceFiles="..\..\third_party\biturbo.dll" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" Condition="Exists('..\..\third_party\biturbo.dll')" />
+    <Copy SourceFiles="..\..\third_party\libbiturbo.so" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" Condition="Exists('..\..\third_party\libbiturbo.so')" />
+    <Copy SourceFiles="..\..\third_party\libbiturbo.dylib" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" Condition="Exists('..\..\third_party\libbiturbo.dylib')" />
+  </Target>
+
 </Project>
