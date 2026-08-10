@@ -11,6 +11,9 @@
          的唯一途径（AvaloniaXamlLoader.Load(this) 在 12.1.1 恒抛异常，必须由 XamlX 改写为编译后 XAML IL）。 -->
     <EnableAvaloniaXamlCompilation>true</EnableAvaloniaXamlCompilation>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- 临时静音 nullable 警告，避免 runner 自动标注占用 biturbo-smoke 作业的注解预算，
+         导致 Windows 真实加载错误被截断（M0 诊断用，后续清理）。-->
+    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8625</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,14 +50,17 @@
        ContinueOnError：下载失败不让主构建失败，运行时由 BiturboSmokeTests 暴露，便于 CI 诊断。-->
   <Target Name="RestoreBiturbo" BeforeTargets="Build">
     <PropertyGroup>
-      <BiturboBaseUrl>https://github.com/hebin123456/Biturbo/releases/latest/download</BiturboBaseUrl>
+      <!-- 钉到具体版本，避免 latest 解析的 302 重定向在 CI 偶发失败；v1.1.1 三平台 asset 文件名
+           已核对：biturbo.dll / libbiturbo.so / libbiturbo.dylib（见 Biturbo 仓库 releases）。-->
+      <BiturboVersion>v1.1.1</BiturboVersion>
+      <BiturboBaseUrl>https://github.com/hebin123456/Biturbo/releases/download/$(BiturboVersion)</BiturboBaseUrl>
     </PropertyGroup>
     <Exec Condition="'$(OS)' == 'Windows_NT' And !Exists('..\..\third_party\biturbo.dll')"
           ContinueOnError="true"
-          Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; New-Item -ItemType Directory -Force -Path '..\..\third_party' | Out-Null; Invoke-WebRequest -Uri '$(BiturboBaseUrl)/biturbo.dll' -OutFile '..\..\third_party\biturbo.dll'; Write-Host 'Restored biturbo.dll from Biturbo latest release'&quot;" />
+          Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; New-Item -ItemType Directory -Force -Path '..\..\third_party' | Out-Null; $url='$(BiturboBaseUrl)/biturbo.dll'; $out='..\..\third_party\biturbo.dll'; $ok=$false; for($i=1;$i -le 5;$i++){ try { Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -UserAgent 'ForkPlus-CI' -TimeoutSec 120; $ok=$true; break } catch { Write-Host &quot;Attempt $i failed: $($_.Exception.Message)&quot;; if($i -lt 5){ Start-Sleep -Seconds (3*$i) } } }; if(-not $ok){ Write-Host 'WARN: biturbo.dll download failed after 5 attempts' } else { Write-Host 'Restored biturbo.dll' }&quot;" />
     <Exec Condition="'$(OS)' == 'Unix' And !Exists('..\..\third_party\libbiturbo.so') And !Exists('..\..\third_party\libbiturbo.dylib')"
           ContinueOnError="true"
-          Command="bash -c 'set -e; mkdir -p ../../third_party; os=`uname -s`; if [ &quot;$os&quot; = &quot;Darwin&quot; ]; then url=&quot;$(BiturboBaseUrl)/libbiturbo.dylib&quot;; out=&quot;../../third_party/libbiturbo.dylib&quot;; else url=&quot;$(BiturboBaseUrl)/libbiturbo.so&quot;; out=&quot;../../third_party/libbiturbo.so&quot;; fi; curl -fsSL &quot;$url&quot; -o &quot;$out&quot;; echo &quot;Restored $out from Biturbo latest release&quot;'" />
+          Command="bash -c 'set -e; mkdir -p ../../third_party; os=`uname -s`; if [ &quot;$os&quot; = &quot;Darwin&quot; ]; then url=&quot;$(BiturboBaseUrl)/libbiturbo.dylib&quot;; out=&quot;../../third_party/libbiturbo.dylib&quot;; else url=&quot;$(BiturboBaseUrl)/libbiturbo.so&quot;; out=&quot;../../third_party/libbiturbo.so&quot;; fi; curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors &quot;$url&quot; -o &quot;$out&quot; &amp;&amp; echo &quot;Restored $out&quot; || echo &quot;WARN: $out download failed after retries&quot;'" />
   </Target>
 
   <Target Name="CopyBiturboToOutput" AfterTargets="Build">
