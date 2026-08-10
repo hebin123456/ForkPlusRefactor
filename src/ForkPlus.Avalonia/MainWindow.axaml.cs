@@ -1,7 +1,9 @@
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using ForkPlus.Avalonia.Diff;
+using ForkPlus.Avalonia.Git;
 using ForkPlus.Services;
 
 namespace ForkPlus.Avalonia;
@@ -26,6 +28,7 @@ public partial class MainWindow : Window
 		DiffButton.Click += OnDiffClicked;
 		PlatformButton.Click += OnPlatformClicked;
 		AiMarkdownButton.Click += OnAiMarkdownClicked;
+		OpenRepoButton.Click += OnOpenRepoClicked;
 	}
 
 	// Avalonia 12：InitializeComponent 必须由代码隐藏提供（内部调用 AvaloniaXamlLoader.Load(this)），
@@ -102,5 +105,31 @@ public void Reset()
 	{
 		new AiMarkdownDemoWindow().Show();
 		StatusText.Text = "已打开 AI Markdown 渲染 Demo (P4)。";
+	}
+
+	// M1：仓库浏览。打开一个本地仓库，经 biturbo 原生引擎列出引用（分支）。
+	// 直接接线 ForkPlus.Biturbo，不依赖原 ForkPlus.Git 命令层（见 Git/GitRepository.cs）。
+	private void OnOpenRepoClicked(object? sender, RoutedEventArgs e) => OpenRepository(RepoPathBox.Text);
+
+	public void OpenRepository(string? path)
+	{
+		path = path?.Trim();
+		if (string.IsNullOrEmpty(path))
+		{
+			StatusText.Text = "请先填写仓库路径。";
+			return;
+		}
+		try
+		{
+			using var repo = new GitRepository(path);
+			string[] branches = repo.GetBranches();
+			BranchesList.ItemsSource = branches;
+			int local = branches.Count(b => b.StartsWith("refs/heads/"));
+			StatusText.Text = $"已打开 {path}：共 {branches.Length} 个引用，其中本地分支 {local} 个。";
+		}
+		catch (Exception ex)
+		{
+			StatusText.Text = $"打开仓库失败：{ex.Message}";
+		}
 	}
 }

@@ -19,6 +19,17 @@
       <Button x:Name="PlatformButton" Content="平台服务 Demo (P3)"/>
       <Button x:Name="AiMarkdownButton" Content="AI Markdown 渲染 Demo (P4)"/>
     </StackPanel>
+    <Border Background="#252526" CornerRadius="6" Padding="12" Margin="0,8,0,0">
+      <StackPanel Spacing="8">
+        <TextBlock FontWeight="Bold">仓库浏览（M1 · 经 biturbo 原生引擎）</TextBlock>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBox x:Name="RepoPathBox" Width="440" Watermark="仓库路径，例如 /path/to/repo"/>
+          <Button x:Name="OpenRepoButton" Content="打开仓库"/>
+        </StackPanel>
+        <TextBlock FontSize="12" Opacity="0.7">本地分支（refs/heads/*）：</TextBlock>
+        <ListBox x:Name="BranchesList" Height="130"/>
+      </StackPanel>
+    </Border>
     <TextBlock x:Name="StatusText" Opacity="0.7" Margin="0,8,0,0"/>
   </StackPanel>
 </Window>
