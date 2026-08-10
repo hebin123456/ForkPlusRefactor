@@ -73,7 +73,9 @@ jobs:
 
       - name: Surface failures as annotations
         if: always()
-        run: grep -niE "failed fork|assert\.|exception|expected:|actual:|nullreference|unhandled|error cs|dllnotfound|avalonia is not" smoke_output.txt | head -n 50 | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
+        run: |
+          grep -niE "failed fork|assert\.|exception|expected:|actual:|nullreference|unhandled|error cs|dllnotfound|avalonia is not|badimage|could not load" smoke_output.txt | head -n 50 | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
+          echo "---- TAIL ----"; tail -n 40 smoke_output.txt | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
 
       - name: Fail if smoke test did not pass
         run: test "$(cat smoke_exit.txt)" = "0"
