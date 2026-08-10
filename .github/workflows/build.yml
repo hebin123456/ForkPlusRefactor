@@ -25,41 +25,24 @@ jobs:
       - name: Build (Release)
         run: dotnet build src/ForkPlus.Avalonia/ForkPlus.Avalonia.csproj --no-restore -c Release
 
+  # M0：biturbo 原生库三平台加载验证 + 全量测试（含 Avalonia Headless UI 测试）。
+  # 用单一 test matrix 取代原先独立的 biturbo-smoke 作业：
+  #   - biturbo-smoke 用 xUnit v3 的 --filter 在三平台偶发 0 匹配（dotnet test 退出码 1），
+  #     与已通过的全量 test（ubuntu 22 测试）矛盾，故回归到全量运行，彻底绕开 filter 问题。
+  #   - defaults.run.shell: bash 让所有 OS 的 run: 步骤走 bash（Windows runner 默认 PowerShell
+  #     会让 grep/sed/$? 失效，且曾因 MSBuild 把 PowerShell 的 $_ 当属性导致 MSB4184）。
+  #   - BiturboSmokeTests（plain [Fact]，触发 Bt 静态构造加载原生库）已包含在全量套件，
+  #     三平台全绿即证明 biturbo.dll / libbiturbo.so / libbiturbo.dylib 均可被 DllImportResolver 加载。
   test:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      # 捕获 dotnet test 退出码（不靠脆弱的汇总文本匹配），输出落盘供注解回传。
-      - name: Test (xUnit + Avalonia Headless)
-        run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release --logger "console;verbosity=normal" > test_output.txt 2>&1; echo $? > test_exit.txt
-
-      # 仅把真实失败行作为 ::error:: 注解发出（镜像 annotations API 可读），通过的不刷红。
-      - name: Surface failures as annotations
-        if: always()
-        run: grep -niE "failed fork|assert\.|exception|expected:|actual:|nullreference|unhandled|error cs|avalonia is not" test_output.txt | head -n 50 | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
-
-      # 以 dotnet test 真实退出码作为门槛，避免 xunit v3 汇总格式差异导致误判。
-      - name: Fail if tests did not pass
-        run: test "$(cat test_exit.txt)" = "0"
-
-  # M0：biturbo 原生库三平台加载验证。单独 matrix 在 win/ubuntu/mac 各跑一次
-  # BiturboSmokeTests（plain [Fact]，不依赖 Avalonia headless 上下文），证明
-  # biturbo.dll / libbiturbo.so / libbiturbo.dylib 在三个 OS 都能被 DllImportResolver 加载。
-  # 与 test 作业（ubuntu 全量）解耦，避免 headless UI 测试的跨平台差异干扰核心引擎验证。
-  biturbo-smoke:
     runs-on: ${{ matrix.os }}
     needs: build
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -68,18 +51,20 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Biturbo smoke (native lib loads on this OS)
-        run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release --filter "FullyQualifiedName~BiturboSmokeTests" --logger "console;verbosity=normal" > smoke_output.txt 2>&1; echo $? > smoke_exit.txt
+      # 捕获 dotnet test 真实退出码（不靠脆弱的汇总文本匹配），输出落盘供注解回传。
+      - name: Test (xUnit + Avalonia Headless)
+        run: dotnet test src/ForkPlus.Avalonia.Tests/ForkPlus.Avalonia.Tests.csproj -c Release --logger "console;verbosity=normal" > test_output.txt 2>&1; echo $? > test_exit.txt
 
+      # 仅把真实失败/原生库加载行作为 ::error:: 注解发出（镜像 annotations API 可读），通过的不刷红。
       - name: Surface failures as annotations
         if: always()
-        shell: bash
         run: |
-          grep -niE "failed fork|assert\.|exception|expected:|actual:|nullreference|unhandled|error cs|dllnotfound|avalonia is not|badimage|could not load" smoke_output.txt | head -n 50 | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
-          echo "---- TAIL ----"; tail -n 40 smoke_output.txt | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
+          grep -niE "failed fork|assert\.|exception|expected:|actual:|nullreference|unhandled|error cs|avalonia is not|dllnotfound|badimage|could not load|biturbo" test_output.txt | head -n 50 | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
+          echo "---- TAIL ----"; tail -n 40 test_output.txt | sed 's/::/__/g' | while IFS= read -r line; do echo "::error::$line"; done
 
-      - name: Fail if smoke test did not pass
-        run: test "$(cat smoke_exit.txt)" = "0"
+      # 以 dotnet test 真实退出码作为门槛，避免 xunit v3 汇总格式差异导致误判。
+      - name: Fail if tests did not pass
+        run: test "$(cat test_exit.txt)" = "0"
 
   # P5：三平台自包含单文件发布（Avalonia 单文件方案），产物作为 artifact 供下载。
   publish:
