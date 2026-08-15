@@ -82,7 +82,9 @@ public class M3DiffWindowVisualScreenshotTests
             branches.SelectedItem = "refs/heads/main";
             Dispatcher.UIThread.RunJobs();
 
-            ListBox commits = main.FindControl<ListBox>("CommitsList")!;
+            // M2+M3 已抽到 CommitDiffPanel，CommitsList 是面板子节点
+            var panel = main.FindControl<ForkPlus.Avalonia.Panels.CommitDiffPanel>("CommitDiffPanel")!;
+            ListBox commits = panel.FindControl<ListBox>("CommitsList")!;
             var commitArr = commits.ItemsSource!.Cast<GitCommit>().ToArray();
             Assert.True(commitArr.Length >= 2);
             GitCommit second = commitArr.First(c => c.Subject == "second commit");

@@ -24,8 +24,8 @@ namespace ForkPlus.Avalonia;
 /// 主窗口本身只承担"装配 + 弹窗"职责：
 /// </para>
 /// <list type="bullet">
-///   <item>M1 仓库浏览 + M2 提交列表：<see cref="_branchesList"/>/<see cref="_commitsList"/> + 事件处理</item>
-///   <item>M3 提交 diff：<see cref="_viewDiffButton"/> + <see cref="OpenSelectedCommitDiff"/></item>
+///   <item>M1 仓库浏览：<see cref="_branchesList"/> + 事件处理</item>
+///   <item>M2+M3 提交列表 / diff：<see cref="CommitDiffPanel"/> 面板（已抽出到 Panels/CommitDiffPanel.xaml）</item>
 ///   <item>M4 工作区改动：<see cref="WorkingTreePanel"/> 面板（已抽出到 Panels/WorkingTreePanel.xaml）</item>
 /// </list>
 /// </summary>
@@ -38,8 +38,8 @@ public partial class MainWindow : Window
     private TextBlock? _statusText;
     private TextBox? _repoPathBox;
     private ListBox? _branchesList;
-    private ListBox? _commitsList;
-    private Button? _viewDiffButton;
+    // M2+M3 面板（内部已含 ListBox + Button + 描述）
+    private CommitDiffPanel? _commitDiffPanel;
     // M4 面板（内部已含 ListBox/Button/TextBlock）
     private WorkingTreePanel? _workingTreePanel;
 
@@ -51,8 +51,16 @@ public partial class MainWindow : Window
         _statusText = this.FindControl<TextBlock>("StatusText");
         _repoPathBox = this.FindControl<TextBox>("RepoPathBox");
         _branchesList = this.FindControl<ListBox>("BranchesList");
-        _commitsList = this.FindControl<ListBox>("CommitsList");
-        _viewDiffButton = this.FindControl<Button>("ViewDiffButton");
+        // M2+M3 面板
+        _commitDiffPanel = this.FindControl<CommitDiffPanel>("CommitDiffPanel");
+        if (_commitDiffPanel != null)
+        {
+            _commitDiffPanel.DiffRequested += OnCommitDiffRequested;
+            _commitDiffPanel.SelectionChangedHint += (_, hint) =>
+            {
+                if (_statusText != null) _statusText.Text = hint;
+            };
+        }
         // M4 面板
         _workingTreePanel = this.FindControl<WorkingTreePanel>("WorkingTreePanel");
         if (_workingTreePanel != null)
@@ -89,16 +97,12 @@ public partial class MainWindow : Window
             aiBtn.Click += OnAiMarkdownClicked;
         if (this.FindControl<Button>("OpenRepoButton") is { } openBtn)
             openBtn.Click += OnOpenRepoClicked;
-        if (_viewDiffButton is { } viewDiffBtn)
-            viewDiffBtn.Click += OnViewDiffClicked;
 
         if (_branchesList != null)
             _branchesList.SelectionChanged += OnBranchSelectionChanged;
-        if (_commitsList != null)
-        {
-            _commitsList.SelectionChanged += OnCommitSelectionChanged;
-            _commitsList.DoubleTapped += (_, _) => OpenSelectedCommitDiff();
-        }
+
+        // M2+M3：CommitDiffPanel 内部已 self-wire 自己的 ListBox/Button 事件，
+        // MainWindow 只通过 DiffRequested 事件接收"用户要看 diff"的意图。
         // M4：WorkingTreePanel 内部已 self-wire 自己的 ListBox/Button 事件，
         // MainWindow 只通过 DiffRequested 事件接收"用户要看 diff"的意图。
     }
@@ -195,8 +199,8 @@ public void Reset()
             string[] branches = _repo.GetBranches();
             if (_branchesList != null)
                 _branchesList.ItemsSource = branches;
-            if (_commitsList != null)
-                _commitsList.ItemsSource = null;
+            // M2：开新仓库时清空提交列表
+            _commitDiffPanel?.LoadCommits(Array.Empty<GitCommit>());
             int local = branches.Count(b => b.StartsWith("refs/heads/"));
             if (_statusText != null)
                 _statusText.Text = $"已打开 {path}：共 {branches.Length} 个引用，其中本地分支 {local} 个。点击分支以加载提交（M2）。";
@@ -211,7 +215,7 @@ public void Reset()
     }
 
     /// <summary>
-    /// M2：分支被选中后，通过 biturbo 列该分支最新 50 条提交。
+    /// M2：分支被选中后，通过 biturbo 列该分支最新 50 条提交，喂给 <see cref="CommitDiffPanel"/>。
     /// </summary>
     private void OnBranchSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -226,8 +230,7 @@ public void Reset()
         try
         {
             GitCommit[] commits = _repo.GetCommits(selected, maxCount: 50);
-            if (_commitsList != null)
-                _commitsList.ItemsSource = commits;
+            _commitDiffPanel?.LoadCommits(commits);
             if (_statusText != null)
             {
                 _statusText.Text = commits.Length == 0
@@ -237,44 +240,61 @@ public void Reset()
         }
         catch (Exception ex)
         {
-            if (_commitsList != null)
-                _commitsList.ItemsSource = null;
+            _commitDiffPanel?.LoadCommits(Array.Empty<GitCommit>());
             if (_statusText != null)
                 _statusText.Text = $"加载 {selected} 提交失败：{ex.Message}";
         }
     }
 
     /// <summary>
-    /// M3：仅更新状态文字提示，告诉用户已经选中 commit 并提示如何打开 diff。
+    /// M3：处理 <see cref="CommitDiffPanel.DiffRequested"/> 事件 —— 弹 <see cref="DiffWindow"/>。
+    /// 弹窗策略归 MainWindow（嵌入 vs 独立窗口 vs 多窗口），面板只负责"用户要看 diff"这一个意图。
     /// </summary>
-    private void OnCommitSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (_commitsList?.SelectedItem is GitCommit c)
-        {
-            if (_statusText != null)
-                _statusText.Text = $"已选中 {c.ShortSha}：{c.Subject}。点 \"查看变更（M3）\" 或双击列表行打开 diff。";
-        }
-    }
-
-    private void OnViewDiffClicked(object? sender, RoutedEventArgs e) => OpenSelectedCommitDiff();
-
-    /// <summary>
-    /// M3：把当前选中的 commit 经 <see cref="GitRepository.GetCommitDiff"/> 拿到 DiffResult，
-    /// 新开 <see cref="DiffWindow"/>。对标原 WPF "选中 commit → 在下方编辑区显示该次提交的 diff"。
-    /// 返回新窗口实例，便于 headless 测试断言；失败（未开仓库 / 未选 commit / git 异常）返回 null。
-    /// </summary>
-    public DiffWindow? OpenSelectedCommitDiff()
+    private void OnCommitDiffRequested(object? sender, GitCommit? c)
     {
         if (_repo == null)
         {
-            if (_statusText != null)
-                _statusText.Text = "请先打开一个仓库（M1）。";
-            return null;
+            if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
+            return;
         }
-        if (_commitsList?.SelectedItem is not GitCommit c)
+        if (c == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先选中一个 commit。";
+            return;
+        }
+        try
+        {
+            DiffResult diff = _repo.GetCommitDiff(c.Sha);
+            var w = new DiffWindow(diff);
+            w.Show();
+            if (_statusText != null)
+            {
+                _statusText.Text = $"已打开 {c.ShortSha} 的 diff：{diff.Lines.Count} 行"
+                    + (diff.Lines.Count > 0 ? "（按 Added/Removed/Unchanged 着色）" : "（该次提交无 tree diff）");
+            }
+        }
+        catch (Exception ex)
         {
             if (_statusText != null)
-                _statusText.Text = "请先选中一个 commit。";
+                _statusText.Text = $"打开 {c.ShortSha} diff 失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// M3：旧 API 兼容（被 headless 测试 <c>M3DiffWindowUiTests.OpenRepo_SelectCommit_ViewDiff_...</c>
+    /// 直接调来弹窗）。走"面板选中的项 → MainWindow 弹窗"路径，行为与点按钮一致。
+    /// </summary>
+    public DiffWindow? OpenSelectedCommitDiff()
+    {
+        var c = _commitDiffPanel?.SelectedCommit;
+        if (_repo == null || c == null)
+        {
+            if (_statusText != null)
+            {
+                _statusText.Text = _repo == null
+                    ? "请先打开一个仓库（M1）。"
+                    : "请先选中一个 commit。";
+            }
             return null;
         }
         try

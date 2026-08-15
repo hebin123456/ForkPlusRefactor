@@ -30,13 +30,8 @@
               </DockPanel>
               <TextBlock FontSize="11" Opacity="0.7">本地 / 远程分支：</TextBlock>
               <ListBox x:Name="BranchesList" Height="160"/>
-              <TextBlock FontSize="11" Opacity="0.7" Margin="0,4,0,0">最新提交（M2 · biturbo）：</TextBlock>
-              <ListBox x:Name="CommitsList" Height="160"/>
-              <DockPanel Margin="0,4,0,0">
-                <Button x:Name="ViewDiffButton" DockPanel.Dock="Right" Content="查看变更（M3）"/>
-                <TextBlock Text="选中一个 commit 后点此按钮，或双击 commit 行，查看该次提交的全部文件 diff。"
-                           FontSize="11" Opacity="0.7" TextWrapping="Wrap" VerticalAlignment="Center"/>
-              </DockPanel>
+              <!-- M2 + M3：提交列表 + 查看变更（已抽到 CommitDiffPanel.xaml） -->
+              <panels:CommitDiffPanel x:Name="CommitDiffPanel"/>
             </StackPanel>
           </Border>
           <!-- M4：本地改动（已抽到 WorkingTreePanel.xaml） -->

@@ -86,7 +86,10 @@ public class MainWindowCommitFlowTests
 			Dispatcher.UIThread.RunJobs();
 
 			// 4) 提交列表应出现 3 条提交
-			ListBox commits = window.FindControl<ListBox>("CommitsList")!;
+			// M2+M3 已抽到 CommitDiffPanel，所以 CommitsList 是面板的子节点
+			// —— 必须先找到面板，再从面板里 FindControl。
+			var panel = window.FindControl<ForkPlus.Avalonia.Panels.CommitDiffPanel>("CommitDiffPanel")!;
+			ListBox commits = panel.FindControl<ListBox>("CommitsList")!;
 			Assert.NotNull(commits.ItemsSource);
 			var commitItems = commits.ItemsSource!.Cast<GitCommit>().ToArray();
 			Assert.Equal(3, commitItems.Length);
@@ -123,7 +126,9 @@ public class MainWindowCommitFlowTests
 
 			TextBlock status = window.FindControl<TextBlock>("StatusText")!;
 			Assert.Contains("打开仓库失败", status.Text);
-			ListBox commits = window.FindControl<ListBox>("CommitsList")!;
+			// M2+M3 已抽到 CommitDiffPanel
+			var panel = window.FindControl<ForkPlus.Avalonia.Panels.CommitDiffPanel>("CommitDiffPanel")!;
+			ListBox commits = panel.FindControl<ListBox>("CommitsList")!;
 			Assert.Null(commits.ItemsSource);
 		}
 		finally

@@ -81,7 +81,9 @@ public class M3DiffWindowUiTests
             Dispatcher.UIThread.RunJobs();
 
             // 3) 在 commits list 里选第二个 commit (subject = "second commit", 新增 b.txt)
-            ListBox commits = main.FindControl<ListBox>("CommitsList")!;
+            // M2+M3 已抽到 CommitDiffPanel，CommitsList 是面板子节点
+            var panel = main.FindControl<ForkPlus.Avalonia.Panels.CommitDiffPanel>("CommitDiffPanel")!;
+            ListBox commits = panel.FindControl<ListBox>("CommitsList")!;
             var commitArr = commits.ItemsSource!.Cast<GitCommit>().ToArray();
             Assert.True(commitArr.Length >= 2);
             GitCommit second = commitArr.First(c => c.Subject == "second commit");
@@ -122,7 +124,9 @@ public class M3DiffWindowUiTests
         Dispatcher.UIThread.RunJobs();
 
         // 没打开仓库、没选 commit 直接点 ViewDiff → 状态文字应提示
-        Button viewDiffBtn = main.FindControl<Button>("ViewDiffButton")!;
+        // M2+M3 已抽到 CommitDiffPanel，ViewDiffButton 是面板子节点
+        var panel = main.FindControl<ForkPlus.Avalonia.Panels.CommitDiffPanel>("CommitDiffPanel")!;
+        Button viewDiffBtn = panel.FindControl<Button>("ViewDiffButton")!;
         viewDiffBtn.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(global::Avalonia.Controls.Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 

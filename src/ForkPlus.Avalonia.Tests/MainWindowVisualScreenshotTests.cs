@@ -88,7 +88,10 @@ public class MainWindowVisualScreenshotTests
             Dispatcher.UIThread.RunJobs();
 
             // 3) 断言 commit 列表已被填充
-            ListBox commits = window.FindControl<ListBox>("CommitsList")!;
+            // M2+M3 已抽到 CommitDiffPanel，所以 CommitsList 是面板的子节点
+            // —— 必须先找到面板，再从面板里 FindControl。
+            var panel = window.FindControl<ForkPlus.Avalonia.Panels.CommitDiffPanel>("CommitDiffPanel")!;
+            ListBox commits = panel.FindControl<ListBox>("CommitsList")!;
             Assert.NotNull(commits.ItemsSource);
             var items = commits.ItemsSource!.Cast<GitCommit>().ToArray();
             Assert.True(items.Length >= 1, "选中 main 分支后 commit 列表应至少含 1 条");
