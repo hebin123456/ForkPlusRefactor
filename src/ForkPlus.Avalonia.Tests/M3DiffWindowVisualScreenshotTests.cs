@@ -26,7 +26,7 @@ namespace ForkPlus.Avalonia.Tests;
 /// <list type="bullet">
 ///   <item>至少 N 个像素接近 AddedBrush（浅绿 #E6FFE6）</item>
 ///   <item>至少 M 个像素接近 RemovedBrush（浅红 #FFE6E6）</item>
-///   <item>PNG 文件落盘到 verification/v3.9.0/avalonia-m3-diff.png，对照 04-diff-tab.png</item>
+///   <item>PNG 文件落盘到 verification/avalonia/m3-diff/avalonia-m3-diff.png，对照 04-diff-tab.png（原 WPF 在 verification/wpf-v3.9.0/04-diff-tab.png）</item>
 /// </list>
 /// 即不只是"窗口被栅格化"，而是"diff 的语义分类（Added/Removed）被真实地画进像素"。
 /// </summary>
@@ -122,7 +122,7 @@ public class M3DiffWindowVisualScreenshotTests
             rtb.Render(visual);
             string outPath = Path.GetFullPath(Path.Combine(
                 AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-                "verification", "v3.9.0", "avalonia-m3-diff.png"));
+                "verification", "avalonia", "m3-diff", "avalonia-m3-diff.png"));
             Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
             using (var fs = File.Create(outPath))
             {
@@ -197,7 +197,7 @@ public class M3DiffWindowVisualScreenshotTests
                 $"lines={diff.Lines.Count}, added={addedCount}, removed={removedCount}）\n" +
                 $"可视化树断言：added-borders={addedBorders}, removed-borders={removedBorders}, plain-borders={plainBorders}\n" +
                 $"源仓库：{repoDir}\n" +
-                $"对照：verification/v3.9.0/04-diff-tab.png（原 WPF 差异标签页）\n" +
+                $"对照：verification/wpf-v3.9.0/04-diff-tab.png（原 WPF 差异标签页）\n" +
                 string.Join("\n", summaryLines) + "\n");
         }
         finally

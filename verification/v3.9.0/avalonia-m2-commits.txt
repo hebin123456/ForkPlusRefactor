@@ -1,4 +1,0 @@
-Avalonia M2 截屏时的 commit 列表（3 条，来源 biturbo）：
-734cb5d  2026-08-15 07:07  ForkPlus CI  third commit
-122c9d5  2026-08-15 07:07  ForkPlus CI  second commit
-7f06025  2026-08-15 07:07  ForkPlus CI  first commit

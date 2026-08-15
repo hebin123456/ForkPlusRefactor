@@ -22,7 +22,7 @@ namespace ForkPlus.Avalonia.Tests;
 /// → 拉取真实 commit 列表 → 截取主窗口的渲染帧并保存为 PNG。
 ///
 /// 对应原 WPF 工程 ForkPlus/UI/MainWindow.xaml "打开仓库 → 看到提交列表" 的视觉回归。
-/// 生成的 PNG 落盘到 <c>verification/v3.9.0/avalonia-m2-commits.png</c>，与
+/// 生成的 PNG 落盘到 <c>verification/avalonia/m2-commits/avalonia-m2-commits.png</c>，与
 /// <c>03-demo-graph.png</c> 共同构成 "原版 WPF / Avalonia 跨平台版" 的对照图组。
 ///
 /// 不直接做像素 diff：M2 的 Avalonia 布局是双面板 + commit 列表（迁移骨架），与 v3.9.0
@@ -107,7 +107,7 @@ public class MainWindowVisualScreenshotTests
             // 5) 落盘 PNG（verification/ 相对仓库根）
             string outPath = Path.GetFullPath(Path.Combine(
                 AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-                "verification", "v3.9.0", "avalonia-m2-commits.png"));
+                "verification", "avalonia", "m2-commits", "avalonia-m2-commits.png"));
             Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
             try
             {

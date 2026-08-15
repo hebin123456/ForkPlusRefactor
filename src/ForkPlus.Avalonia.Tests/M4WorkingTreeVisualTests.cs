@@ -260,7 +260,7 @@ public class M4WorkingTreeVisualTests
             rtb.Render(visual);
             string outPath = Path.GetFullPath(Path.Combine(
                 AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-                "verification", "v3.9.0", "avalonia-m4-working-tree.png"));
+                "verification", "avalonia", "m4-working-tree", "avalonia-m4-working-tree.png"));
             Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
             using (var fs = File.Create(outPath))
             {

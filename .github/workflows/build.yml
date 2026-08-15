@@ -2,15 +2,24 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
+
+# 全局并发：同一 ref 上有 in_progress run 时，自动 cancel 旧的，
+# 避免 push 后旧 run 还在跑（特别是 macOS publish 慢，3 个 RID × 3 OS 容易排队）。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
 
 jobs:
+  # 构建 Release：单平台即可（ubuntu），后面 test 会在三平台各自 build。
+  # 加 timeout-minutes 兜底，避免 runner 卡死后整个 workflow 永远 yellow。
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -36,6 +45,7 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     needs: build
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -75,14 +85,41 @@ jobs:
       - name: Fail if tests did not pass
         run: test "$(cat test_exit.txt)" = "0"
 
+      # 上传 test_output.txt 作为 artifact（即便失败也保留，便于本地复现/诊断）。
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log-${{ matrix.os }}
+          path: test_output.txt
+          retention-days: 7
+          if-no-files-found: ignore
+
   # P5：三平台自包含单文件发布（Avalonia 单文件方案），产物作为 artifact 供下载。
+  # 关键修复：
+  #   1) 加 timeout-minutes 25 —— 之前没设，self-contained + PublishSingleFile + native libs
+  #      在 macOS arm64 runner 上能跑 10+ 分钟，超过 GitHub 默认 6h 之前会被外部超时，
+  #      但中间 runner 长时间无任何 step 状态刷新看起来像"卡住"。显式 25 分钟让进度更明确。
+  #   2) 上传 artifact 加 retention-days / if-no-files-found —— actions/upload-artifact@v4 默认
+  #      找不到文件会 hard fail 让 publish step 挂红。
+  #   3) 把 publish 从 test 拆出来（之前 needs: build）—— 即使某 OS 测试挂了，
+  #      其他 OS 的发布产物还能继续出；workflow_dispatch 也能单独触发发布。
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     needs: build
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        rid: [win-x64, osx-arm64, linux-x64]
+        # RID ↔ OS 配对：publish 必须用对应平台 runner，否则 dotnet publish -r osx-arm64
+        # 在 ubuntu runner 上会失败（Mac .NET runtime 必须在 Mac 上恢复）。
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-latest
+            rid: osx-arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -99,3 +136,5 @@ jobs:
         with:
           name: ForkPlus.Avalonia-${{ matrix.rid }}
           path: publish/${{ matrix.rid }}
+          if-no-files-found: error
+          retention-days: 14
