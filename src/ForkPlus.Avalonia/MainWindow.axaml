@@ -2,34 +2,54 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ForkPlus.Avalonia.MainWindow"
         Title="ForkPlus (Avalonia — 迁移起点)"
-        Width="860" Height="600">
-  <StackPanel Margin="24" Spacing="10">
-    <TextBlock FontSize="24" FontWeight="Bold">ForkPlus · Avalonia 跨平台迁移起点</TextBlock>
-    <TextBlock TextWrapping="Wrap" Opacity="0.85">
-      这是 ForkPlus 从 WPF 迁移到 Avalonia 的第一个可构建骨架。下方展示已接入的 7 个跨平台服务
-      （原 WPF 工程 ServiceLocator 的接缝）。后续 UI 将逐步从 ForkPlus 的 245 个 XAML 搬运到此处。
-    </TextBlock>
-    <Border Background="#1e1e1e" CornerRadius="6" Padding="12" Margin="0,8,0,0">
-      <TextBlock x:Name="ServicesText" TextWrapping="Wrap" />
-    </Border>
-    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-      <Button x:Name="CopyButton" Content="测试 IClipboardService"/>
-      <Button x:Name="ToastButton" Content="测试 IToastNotificationService"/>
-      <Button x:Name="DiffButton" Content="差异对比 Demo (P2)"/>
-      <Button x:Name="PlatformButton" Content="平台服务 Demo (P3)"/>
-      <Button x:Name="AiMarkdownButton" Content="AI Markdown 渲染 Demo (P4)"/>
-    </StackPanel>
-    <Border Background="#252526" CornerRadius="6" Padding="12" Margin="0,8,0,0">
-      <StackPanel Spacing="8">
-        <TextBlock FontWeight="Bold">仓库浏览（M1 · 经 biturbo 原生引擎）</TextBlock>
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <TextBox x:Name="RepoPathBox" Width="440" Watermark="仓库路径，例如 /path/to/repo"/>
-          <Button x:Name="OpenRepoButton" Content="打开仓库"/>
+        Width="1100" Height="700">
+  <Grid ColumnDefinitions="320,4,*" RowDefinitions="*">
+    <!-- 左侧：分支 / 提交列表 -->
+    <Border Grid.Column="0" Background="#1e1e1e" Padding="12">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="8">
+          <TextBlock FontSize="18" FontWeight="Bold">ForkPlus · Avalonia 跨平台迁移起点</TextBlock>
+          <TextBlock TextWrapping="Wrap" Opacity="0.85">
+            这是从 WPF 迁移到 Avalonia 的第一个可构建骨架。下方展示已接入的 7 个跨平台服务
+            （原 WPF 工程 ServiceLocator 的接缝）。后续 UI 将逐步从 ForkPlus 的 245 个 XAML 搬运到此处。
+          </TextBlock>
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+            <Button x:Name="CopyButton" Content="剪贴板"/>
+            <Button x:Name="ToastButton" Content="通知"/>
+            <Button x:Name="DiffButton" Content="Diff Demo"/>
+            <Button x:Name="PlatformButton" Content="平台服务 Demo"/>
+            <Button x:Name="AiMarkdownButton" Content="AI Markdown"/>
+          </StackPanel>
+          <Border Background="#252526" CornerRadius="6" Padding="8">
+            <StackPanel Spacing="6">
+              <TextBlock FontWeight="Bold">仓库（M1+M2）</TextBlock>
+              <DockPanel>
+                <Button x:Name="OpenRepoButton" DockPanel.Dock="Right" Margin="6,0,0,0" Content="打开"/>
+                <TextBox x:Name="RepoPathBox" Watermark="仓库路径，例如 /path/to/repo"/>
+              </DockPanel>
+              <TextBlock FontSize="11" Opacity="0.7">本地 / 远程分支：</TextBlock>
+              <ListBox x:Name="BranchesList" Height="160"/>
+              <TextBlock FontSize="11" Opacity="0.7" Margin="0,4,0,0">最新提交（M2 · biturbo）：</TextBlock>
+              <ListBox x:Name="CommitsList" Height="220"/>
+            </StackPanel>
+          </Border>
         </StackPanel>
-        <TextBlock FontSize="12" Opacity="0.7">本地分支（refs/heads/*）：</TextBlock>
-        <ListBox x:Name="BranchesList" Height="130"/>
-      </StackPanel>
+        <Border Background="#1e1e1e" CornerRadius="6" Padding="8" Margin="0,8,0,0">
+          <ScrollViewer>
+            <TextBlock x:Name="ServicesText" TextWrapping="Wrap" FontFamily="monospace" FontSize="11"/>
+          </ScrollViewer>
+        </Border>
+      </DockPanel>
     </Border>
-    <TextBlock x:Name="StatusText" Opacity="0.7" Margin="0,8,0,0"/>
-  </StackPanel>
+
+    <GridSplitter Grid.Column="1" Background="#333333" ResizeDirection="Columns"/>
+
+    <!-- 右侧：服务说明 / 操作日志 -->
+    <Border Grid.Column="2" Background="#1e1e1e" Padding="16">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" FontSize="16" FontWeight="Bold" Margin="0,0,0,8">操作日志</TextBlock>
+        <TextBlock x:Name="StatusText" TextWrapping="Wrap" Opacity="0.9" FontFamily="monospace" FontSize="12"/>
+      </DockPanel>
+    </Border>
+  </Grid>
 </Window>

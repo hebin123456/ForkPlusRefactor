@@ -25,6 +25,8 @@
     <!-- Avalonia 12 无头 UI 测试基座（对标 P5：FlaUI → Avalonia UI 测试）。
          12.1.1 与主体工程 Avalonia 版本严格对齐，避免双版本并存。 -->
     <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.1" />
+    <!-- M2 视觉截图：走真实 Skia 渲染让 RTB 拿到像素（默认 stub renderer 不画像素）。 -->
+    <PackageReference Include="Avalonia.Skia" Version="12.1.1" />
     <!-- M0：AvalonEdit 集成验证需要直接引用该控件类型（差异视图底层控件，对应 WPF 的
          ICSharpCode.AvalonEdit）。与主工程版本严格对齐 12.0.0。 -->
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />

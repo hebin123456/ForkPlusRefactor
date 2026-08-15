@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -8,59 +10,92 @@ using ForkPlus.Services;
 
 namespace ForkPlus.Avalonia;
 
+/// <summary>
+/// ForkPlus 主窗口（跨平台 Avalonia 版本）。
+///
+/// <para>
+/// Avalonia 12 的 XamlX 编译 IL 不会为 <c>x:Name</c> 自动生成字段访问器，
+/// 因此代码隐藏统一通过 <see cref="Window.FindControl{T}(string)"/> 拿控件。
+/// 这样在交互运行、CI headless 测试等不同上下文中都能稳定取到控件。
+/// </para>
+/// </summary>
 public partial class MainWindow : Window
 {
-	public MainWindow()
-	{
-		InitializeComponent();
-		var ac = ServiceLocator.AppContext;
-		ServicesText.Text =
-			"已接入的跨平台服务（ServiceLocator）：\n" +
-			$"  IAppContext.AppDataDirectory     = {ac.AppDataDirectory}\n" +
-			$"  IAppContext.ForkDataDirectoryPath = {ac.ForkDataDirectoryPath}\n" +
-			$"  IAppContext.RepositoriesFilePath  = {ac.RepositoriesFilePath}\n" +
-			$"  IAppContext.OSVersion            = {ac.OSVersion}\n" +
-			"  IDispatcher / IClipboardService / ITimerService /\n" +
-			"  IToastNotificationService / IWindowManagerService / IDesignModeService 均已注册";
+    private GitRepository? _repo;
 
-		CopyButton.Click += OnCopyClicked;
-		ToastButton.Click += OnToastClicked;
-		DiffButton.Click += OnDiffClicked;
-		PlatformButton.Click += OnPlatformClicked;
-		AiMarkdownButton.Click += OnAiMarkdownClicked;
-		OpenRepoButton.Click += OnOpenRepoClicked;
-	}
+    // 缓存常用控件的引用，避免每次事件处理都做 FindControl 反射。
+    private TextBlock? _servicesText;
+    private TextBlock? _statusText;
+    private TextBox? _repoPathBox;
+    private ListBox? _branchesList;
+    private ListBox? _commitsList;
 
-	// Avalonia 12：InitializeComponent 必须由代码隐藏提供（内部调用 AvaloniaXamlLoader.Load(this)），
-	// 编译期由 XamlX（CompileAvaloniaXaml）把该 Load(this) 调用补丁为编译后的 XAML IL。
-	public void InitializeComponent()
-	{
-		AvaloniaXamlLoader.Load(this);
-	}
+    public MainWindow()
+    {
+        InitializeComponent();
 
-	private void OnCopyClicked(object? sender, RoutedEventArgs e)
-	{
-		ServiceLocator.Clipboard.SetText("Hello from Avalonia ForkPlus!");
-		StatusText.Text = "已通过 IClipboardService 写入剪贴板。";
-	}
+        _servicesText = this.FindControl<TextBlock>("ServicesText");
+        _statusText = this.FindControl<TextBlock>("StatusText");
+        _repoPathBox = this.FindControl<TextBox>("RepoPathBox");
+        _branchesList = this.FindControl<ListBox>("BranchesList");
+        _commitsList = this.FindControl<ListBox>("CommitsList");
 
-	private void OnToastClicked(object? sender, RoutedEventArgs e)
-	{
-		// 与 ForkPlus/Accounts/NotificationManager.SendWindowsNotification 构造的 WinRT Toast XML 完全一致
-		ServiceLocator.Toast?.Show(
-			"<toast><visual><binding template=\"ToastGeneric\">" +
-			"<text>ForkPlus</text>" +
-			"<text>Avalonia 通知服务已接入（WinRT Toast XML 被解析显示）</text>" +
-			"</binding></visual></toast>");
-		StatusText.Text = "已通过 IToastNotificationService 显示 in-app 浮层。";
-	}
+        var ac = ServiceLocator.AppContext;
+        if (_servicesText != null)
+        {
+            _servicesText.Text =
+                "已接入的跨平台服务（ServiceLocator）：\n" +
+                $"  IAppContext.AppDataDirectory     = {ac.AppDataDirectory}\n" +
+                $"  IAppContext.ForkDataDirectoryPath = {ac.ForkDataDirectoryPath}\n" +
+                $"  IAppContext.RepositoriesFilePath  = {ac.RepositoriesFilePath}\n" +
+                $"  IAppContext.OSVersion            = {ac.OSVersion}\n" +
+                "  IDispatcher / IClipboardService / ITimerService /\n" +
+                "  IToastNotificationService / IWindowManagerService / IDesignModeService 均已注册";
+        }
 
-	// P2 PoC：用跨平台 LCS 算法（对标 ForkPlus 经 biturbo 计算的 BtPatchToken）生成
-	// DiffResult，再交给 AvaloniaEdit 视图渲染带色差异。biturbo 为原生 Windows 库，
-	// 此处用同构的纯托管实现以便跨平台运行。
-	private void OnDiffClicked(object? sender, RoutedEventArgs e)
-	{
-		const string oldText =
+        if (this.FindControl<Button>("CopyButton") is { } copyBtn)
+            copyBtn.Click += OnCopyClicked;
+        if (this.FindControl<Button>("ToastButton") is { } toastBtn)
+            toastBtn.Click += OnToastClicked;
+        if (this.FindControl<Button>("DiffButton") is { } diffBtn)
+            diffBtn.Click += OnDiffClicked;
+        if (this.FindControl<Button>("PlatformButton") is { } platformBtn)
+            platformBtn.Click += OnPlatformClicked;
+        if (this.FindControl<Button>("AiMarkdownButton") is { } aiBtn)
+            aiBtn.Click += OnAiMarkdownClicked;
+        if (this.FindControl<Button>("OpenRepoButton") is { } openBtn)
+            openBtn.Click += OnOpenRepoClicked;
+
+        if (_branchesList != null)
+            _branchesList.SelectionChanged += OnBranchSelectionChanged;
+    }
+
+    public void InitializeComponent()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+
+    private void OnCopyClicked(object? sender, RoutedEventArgs e)
+    {
+        ServiceLocator.Clipboard.SetText("Hello from Avalonia ForkPlus!");
+        if (_statusText != null)
+            _statusText.Text = "已通过 IClipboardService 写入剪贴板。";
+    }
+
+    private void OnToastClicked(object? sender, RoutedEventArgs e)
+    {
+        ServiceLocator.Toast?.Show(
+            "<toast><visual><binding template=\"ToastGeneric\">" +
+            "<text>ForkPlus</text>" +
+            "<text>Avalonia 通知服务已接入（WinRT Toast XML 被解析显示）</text>" +
+            "</binding></visual></toast>");
+        if (_statusText != null)
+            _statusText.Text = "已通过 IToastNotificationService 显示 in-app 浮层。";
+    }
+
+    private void OnDiffClicked(object? sender, RoutedEventArgs e)
+    {
+        const string oldText =
 @"public int Add(int a, int b)
 {
     return a + b;
@@ -70,7 +105,7 @@ public void Log(string message)
 {
     Console.WriteLine(message);
 }";
-		const string newText =
+        const string newText =
 @"public int Add(int a, int b)
 {
     // 支持更大的数值范围
@@ -86,50 +121,91 @@ public void Reset()
 {
     Logger.Clear();
 }";
-		var result = LineDiff.Compute(oldText, newText, "a/Calculator.cs", "b/Calculator.cs");
-		new DiffWindow(result).Show();
-		StatusText.Text = $"已打开差异对比：{result.Lines.Count} 行（绿=新增，红=删除）。";
-	}
+        var result = LineDiff.Compute(oldText, newText, "a/Calculator.cs", "b/Calculator.cs");
+        new DiffWindow(result).Show();
+        if (_statusText != null)
+            _statusText.Text = $"已打开差异对比：{result.Lines.Count} 行（绿=新增，红=删除）。";
+    }
 
-	// P3：打开平台服务演示窗口，验证主题/凭据/文件对话框三个跨平台服务
-	// （分别替代原 WPF 的 SystemThemeHelper / WindowsCredentialManager / OpenDialog(CodePack)）。
-	private void OnPlatformClicked(object? sender, RoutedEventArgs e)
-	{
-		new PlatformServicesDemoWindow().Show();
-		StatusText.Text = "已打开平台服务 Demo (P3)：主题检测 / 凭据管理 / 文件对话框。";
-	}
+    private void OnPlatformClicked(object? sender, RoutedEventArgs e)
+    {
+        new PlatformServicesDemoWindow().Show();
+        if (_statusText != null)
+            _statusText.Text = "已打开平台服务 Demo (P3)：主题检测 / 凭据管理 / 文件对话框。";
+    }
 
-	// P4：打开 AI Markdown 渲染演示窗口，用自研零依赖 AvaloniaMarkdownViewer
-	// 替代原 WPF 的 WebView2 渲染层（流式 AI 文本 / 长文档 / 错误兜底 / 主题跟随）。
-	private void OnAiMarkdownClicked(object? sender, RoutedEventArgs e)
-	{
-		new AiMarkdownDemoWindow().Show();
-		StatusText.Text = "已打开 AI Markdown 渲染 Demo (P4)。";
-	}
+    private void OnAiMarkdownClicked(object? sender, RoutedEventArgs e)
+    {
+        new AiMarkdownDemoWindow().Show();
+        if (_statusText != null)
+            _statusText.Text = "已打开 AI Markdown 渲染 Demo (P4)。";
+    }
 
-	// M1：仓库浏览。打开一个本地仓库，经 biturbo 原生引擎列出引用（分支）。
-	// 直接接线 ForkPlus.Biturbo，不依赖原 ForkPlus.Git 命令层（见 Git/GitRepository.cs）。
-	private void OnOpenRepoClicked(object? sender, RoutedEventArgs e) => OpenRepository(RepoPathBox.Text);
+    private void OnOpenRepoClicked(object? sender, RoutedEventArgs e) => OpenRepository(_repoPathBox?.Text);
 
-	public void OpenRepository(string? path)
-	{
-		path = path?.Trim();
-		if (string.IsNullOrEmpty(path))
-		{
-			StatusText.Text = "请先填写仓库路径。";
-			return;
-		}
-		try
-		{
-			using var repo = new GitRepository(path);
-			string[] branches = repo.GetBranches();
-			BranchesList.ItemsSource = branches;
-			int local = branches.Count(b => b.StartsWith("refs/heads/"));
-			StatusText.Text = $"已打开 {path}：共 {branches.Length} 个引用，其中本地分支 {local} 个。";
-		}
-		catch (Exception ex)
-		{
-			StatusText.Text = $"打开仓库失败：{ex.Message}";
-		}
-	}
+    /// <summary>
+    /// M1：打开仓库并列出引用。失败时通过 <see cref="_statusText"/> 反馈。
+    /// </summary>
+    public void OpenRepository(string? path)
+    {
+        path = path?.Trim();
+        if (string.IsNullOrEmpty(path))
+        {
+            if (_statusText != null)
+                _statusText.Text = "请先填写仓库路径。";
+            return;
+        }
+        try
+        {
+            _repo?.Dispose();
+            _repo = new GitRepository(path);
+            string[] branches = _repo.GetBranches();
+            if (_branchesList != null)
+                _branchesList.ItemsSource = branches;
+            if (_commitsList != null)
+                _commitsList.ItemsSource = null;
+            int local = branches.Count(b => b.StartsWith("refs/heads/"));
+            if (_statusText != null)
+                _statusText.Text = $"已打开 {path}：共 {branches.Length} 个引用，其中本地分支 {local} 个。点击分支以加载提交（M2）。";
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null)
+                _statusText.Text = $"打开仓库失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// M2：分支被选中后，通过 biturbo 列该分支最新 50 条提交。
+    /// </summary>
+    private void OnBranchSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_repo == null)
+        {
+            return;
+        }
+        if (_branchesList?.SelectedItem is not string selected)
+        {
+            return;
+        }
+        try
+        {
+            GitCommit[] commits = _repo.GetCommits(selected, maxCount: 50);
+            if (_commitsList != null)
+                _commitsList.ItemsSource = commits;
+            if (_statusText != null)
+            {
+                _statusText.Text = commits.Length == 0
+                    ? $"分支 {selected} 暂无提交。"
+                    : $"已加载 {selected} 的最新 {commits.Length} 条提交（首条：{commits[0].DisplayLine}）。";
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_commitsList != null)
+                _commitsList.ItemsSource = null;
+            if (_statusText != null)
+                _statusText.Text = $"加载 {selected} 提交失败：{ex.Message}";
+        }
+    }
 }

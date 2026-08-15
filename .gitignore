@@ -1,0 +1,38 @@
+# Build outputs
+bin/
+obj/
+out/
+*.user
+*.suo
+.vs/
+
+# .NET
+*.dll
+*.exe
+*.pdb
+*.deps.json
+*.runtimeconfig.json
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+
+# Test results
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build-time downloaded native libs (CI restores to third_party/, repo only
+# carries the directory as a marker so the file doesn't get re-downloaded
+# on every clean build)
+third_party/*.so
+third_party/*.dylib
+third_party/*.dll
+!third_party/.gitkeep
