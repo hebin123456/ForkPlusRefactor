@@ -1,6 +1,6 @@
-Avalonia M3 DiffWindow 截屏（commit=96daeef, subject=second commit, lines=5, added=2, removed=1）
+Avalonia M3 DiffWindow 截屏（commit=3371dfe, subject=second commit, lines=5, added=2, removed=1）
 可视化树断言：added-borders=2, removed-borders=1, plain-borders=2
-源仓库：/tmp/forkplus_m3_visual_repo_f80155b74ee94e45b06b32a11ac41baf
+源仓库：/tmp/forkplus_m3_visual_repo_3eafe3b454d8448b956345488150a4bb
 对照：verification/v3.9.0/04-diff-tab.png（原 WPF 差异标签页）
   alpha
 - beta

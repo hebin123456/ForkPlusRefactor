@@ -24,14 +24,15 @@ namespace ForkPlus.Avalonia;
 /// 主窗口本身只承担"装配 + 弹窗"职责：
 /// </para>
 /// <list type="bullet">
-///   <item>M1 仓库浏览：<see cref="_branchesList"/> + 事件处理</item>
+///   <item>M1+M2 仓库/分支/提交加载：<see cref="RepoOpHandler"/>（已抽到 RepoOpHandler.cs）</item>
 ///   <item>M2+M3 提交列表 / diff：<see cref="CommitDiffPanel"/> 面板（已抽出到 Panels/CommitDiffPanel.xaml）</item>
 ///   <item>M4 工作区改动：<see cref="WorkingTreePanel"/> 面板（已抽出到 Panels/WorkingTreePanel.xaml）</item>
 /// </list>
 /// </summary>
 public partial class MainWindow : Window
 {
-    private GitRepository? _repo;
+    // M1+M2：仓库/分支/提交加载操作处理器
+    private RepoOpHandler? _repoOps;
 
     // 缓存常用控件的引用，避免每次事件处理都做 FindControl 反射。
     private TextBlock? _servicesText;
@@ -71,6 +72,8 @@ public partial class MainWindow : Window
                 if (_statusText != null) _statusText.Text = hint;
             };
         }
+        // M1+M2 操作处理器：装配好之后才能订阅分支变化
+        _repoOps = new RepoOpHandler(_branchesList, _commitDiffPanel, _workingTreePanel, _statusText);
 
         var ac = ServiceLocator.AppContext;
         if (_servicesText != null)
@@ -182,67 +185,22 @@ public void Reset()
 
     /// <summary>
     /// M1：打开仓库并列出引用。失败时通过 <see cref="_statusText"/> 反馈。
+    /// 已委托给 <see cref="RepoOpHandler.Open"/>，保留此公开方法作为 headless 测试入口和兼容 API。
     /// </summary>
     public void OpenRepository(string? path)
     {
-        path = path?.Trim();
-        if (string.IsNullOrEmpty(path))
-        {
-            if (_statusText != null)
-                _statusText.Text = "请先填写仓库路径。";
-            return;
-        }
-        try
-        {
-            _repo?.Dispose();
-            _repo = new GitRepository(path);
-            string[] branches = _repo.GetBranches();
-            if (_branchesList != null)
-                _branchesList.ItemsSource = branches;
-            // M2：开新仓库时清空提交列表
-            _commitDiffPanel?.LoadCommits(Array.Empty<GitCommit>());
-            int local = branches.Count(b => b.StartsWith("refs/heads/"));
-            if (_statusText != null)
-                _statusText.Text = $"已打开 {path}：共 {branches.Length} 个引用，其中本地分支 {local} 个。点击分支以加载提交（M2）。";
-            // M4：同步刷一次工作区改动
-            LoadWorkingTreeChanges();
-        }
-        catch (Exception ex)
-        {
-            if (_statusText != null)
-                _statusText.Text = $"打开仓库失败：{ex.Message}";
-        }
+        _repoOps?.Open(path);
     }
 
     /// <summary>
     /// M2：分支被选中后，通过 biturbo 列该分支最新 50 条提交，喂给 <see cref="CommitDiffPanel"/>。
+    /// 已委托给 <see cref="RepoOpHandler.SelectBranch"/>。
     /// </summary>
     private void OnBranchSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (_repo == null)
+        if (_branchesList?.SelectedItem is string selected)
         {
-            return;
-        }
-        if (_branchesList?.SelectedItem is not string selected)
-        {
-            return;
-        }
-        try
-        {
-            GitCommit[] commits = _repo.GetCommits(selected, maxCount: 50);
-            _commitDiffPanel?.LoadCommits(commits);
-            if (_statusText != null)
-            {
-                _statusText.Text = commits.Length == 0
-                    ? $"分支 {selected} 暂无提交。"
-                    : $"已加载 {selected} 的最新 {commits.Length} 条提交（首条：{commits[0].DisplayLine}）。";
-            }
-        }
-        catch (Exception ex)
-        {
-            _commitDiffPanel?.LoadCommits(Array.Empty<GitCommit>());
-            if (_statusText != null)
-                _statusText.Text = $"加载 {selected} 提交失败：{ex.Message}";
+            _repoOps?.SelectBranch(selected);
         }
     }
 
@@ -252,7 +210,7 @@ public void Reset()
     /// </summary>
     private void OnCommitDiffRequested(object? sender, GitCommit? c)
     {
-        if (_repo == null)
+        if (_repoOps?.CurrentRepo == null)
         {
             if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
             return;
@@ -264,7 +222,7 @@ public void Reset()
         }
         try
         {
-            DiffResult diff = _repo.GetCommitDiff(c.Sha);
+            DiffResult diff = _repoOps.CurrentRepo.GetCommitDiff(c.Sha);
             var w = new DiffWindow(diff);
             w.Show();
             if (_statusText != null)
@@ -286,12 +244,13 @@ public void Reset()
     /// </summary>
     public DiffWindow? OpenSelectedCommitDiff()
     {
+        var repo = _repoOps?.CurrentRepo;
         var c = _commitDiffPanel?.SelectedCommit;
-        if (_repo == null || c == null)
+        if (repo == null || c == null)
         {
             if (_statusText != null)
             {
-                _statusText.Text = _repo == null
+                _statusText.Text = repo == null
                     ? "请先打开一个仓库（M1）。"
                     : "请先选中一个 commit。";
             }
@@ -299,7 +258,7 @@ public void Reset()
         }
         try
         {
-            DiffResult diff = _repo.GetCommitDiff(c.Sha);
+            DiffResult diff = repo.GetCommitDiff(c.Sha);
             var w = new DiffWindow(diff);
             w.Show();
             if (_statusText != null)
@@ -321,11 +280,14 @@ public void Reset()
 
     /// <summary>
     /// M4：把当前仓库传给 <see cref="WorkingTreePanel"/> 让它自己刷。
-    /// 由 <see cref="OpenRepository"/> 在拿到新 <see cref="GitRepository"/> 后调用。
+    /// 委托给 <see cref="RepoOpHandler.Open"/> 之后这一步已自动发生，保留为公开兼容 API。
     /// </summary>
     public void LoadWorkingTreeChanges()
     {
-        _workingTreePanel?.Load(_repo);
+        if (_repoOps?.CurrentRepo != null)
+        {
+            _workingTreePanel?.Load(_repoOps.CurrentRepo);
+        }
     }
 
     /// <summary>
@@ -334,7 +296,7 @@ public void Reset()
     /// </summary>
     private void OnWorkingTreeDiffRequested(object? sender, WorkingTreeChange? c)
     {
-        if (_repo == null)
+        if (_repoOps?.CurrentRepo == null)
         {
             if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
             return;
@@ -346,7 +308,7 @@ public void Reset()
         }
         try
         {
-            DiffResult diff = _repo.GetWorkingTreeDiff(c.Path);
+            DiffResult diff = _repoOps.CurrentRepo.GetWorkingTreeDiff(c.Path);
             var w = new DiffWindow(diff);
             w.Show();
             if (_statusText != null)
@@ -368,11 +330,12 @@ public void Reset()
     public DiffWindow? OpenSelectedWorkingTreeDiff()
     {
         var c = _workingTreePanel?.SelectedChange;
-        if (_repo == null || c == null)
+        var repo = _repoOps?.CurrentRepo;
+        if (repo == null || c == null)
         {
             if (_statusText != null)
             {
-                _statusText.Text = _repo == null
+                _statusText.Text = repo == null
                     ? "请先打开一个仓库（M1）。"
                     : "请先选中一个工作区改动（M4）。";
             }
@@ -380,7 +343,7 @@ public void Reset()
         }
         try
         {
-            DiffResult diff = _repo.GetWorkingTreeDiff(c.Path);
+            DiffResult diff = repo.GetWorkingTreeDiff(c.Path);
             var w = new DiffWindow(diff);
             w.Show();
             if (_statusText != null)
