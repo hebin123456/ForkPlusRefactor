@@ -165,6 +165,137 @@ public sealed class GitRepository : IDisposable
 			fallbackNewPath: "b/" + fullSha.Substring(0, Math.Min(7, fullSha.Length)));
 	}
 
+	/// <summary>
+	/// M4：列出工作区所有相对当前 HEAD 的改动（unstaged + staged + untracked）。
+	/// <para>
+	/// 实现：spawn <c>git status --porcelain=1 -z</c>，解析两字符 XY 位图。
+	/// <c>-z</c> 用 NUL 分隔条目，避免文件名含特殊字符（如中文、换行、引号）时的解析歧义。
+	/// </para>
+	/// </summary>
+	/// <exception cref="GitRepositoryException">git 进程启动失败或返回非 0。</exception>
+	public WorkingTreeChange[] GetWorkingTreeChanges()
+	{
+		EnsureNotDisposed();
+		// --porcelain=1 -z 走机器友好格式
+		string raw = RunGit("status", "status", "--porcelain=1", "-z", "--untracked-files=all");
+		if (string.IsNullOrEmpty(raw))
+		{
+			return Array.Empty<WorkingTreeChange>();
+		}
+		return ParsePorcelainStatus(raw);
+	}
+
+	/// <summary>
+	/// M4：拿到某文件当前 working tree 相对 HEAD 的 unified diff。
+	/// <para>
+	/// 对应 <c>git diff --no-color -- &lt;path&gt;</c>：
+	/// 已暂存的部分要 diff 才看得到，所以这里把 staged + unstaged 拼起来。
+	/// </para>
+	/// </summary>
+	/// <param name="relativePath">相对仓库根的路径（<c>git status</c> 报的形态）。</param>
+	public DiffResult GetWorkingTreeDiff(string relativePath)
+	{
+		EnsureNotDisposed();
+		if (string.IsNullOrWhiteSpace(relativePath))
+		{
+			throw new ArgumentException("relativePath 不能为空", nameof(relativePath));
+		}
+		// 1) staged（index vs HEAD）
+		string staged = RunGit("diff-staged", "diff", "--no-color", "--no-ext-diff",
+			"--cached", "--", relativePath);
+		// 2) unstaged（working tree vs index）
+		string unstaged = RunGit("diff-unstaged", "diff", "--no-color", "--no-ext-diff",
+			"--", relativePath);
+		// 3) untracked：文件不存在，diff 永远是空 -> 由调用方决定是否走"整文件全是 Added"路径
+		string combined = (staged ?? "") + (unstaged ?? "");
+		if (string.IsNullOrWhiteSpace(combined))
+		{
+			// 可能是 untracked，单独打 full file
+			string fullPath = System.IO.Path.Combine(_repoPath, relativePath);
+			if (System.IO.File.Exists(fullPath))
+			{
+				string[] allLines = System.IO.File.ReadAllLines(fullPath);
+				var synthetic = new System.Text.StringBuilder();
+				synthetic.Append("--- /dev/null\n");
+				synthetic.Append("+++ b/").Append(relativePath).Append('\n');
+				synthetic.Append("@@ -0,0 +1,").Append(allLines.Length).Append(" @@\n");
+				foreach (string line in allLines)
+				{
+					synthetic.Append('+').Append(line).Append('\n');
+				}
+				combined = synthetic.ToString();
+			}
+			else
+			{
+				return new DiffResult("a/" + relativePath, "b/" + relativePath, Array.Empty<DiffLine>());
+			}
+		}
+		return UnifiedDiffParser.Parse(combined,
+			fallbackOldPath: "a/" + relativePath,
+			fallbackNewPath: "b/" + relativePath);
+	}
+
+	private static WorkingTreeChange[] ParsePorcelainStatus(string raw)
+	{
+		// -z 模式下：
+		//  普通条目用 '\0' 分隔，重命名/复制条目用 '\0' 分隔 "old\0new" 两段
+		string[] entries = raw.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+		var list = new List<WorkingTreeChange>(entries.Length);
+		for (int i = 0; i < entries.Length; i++)
+		{
+			string entry = entries[i];
+			if (entry.Length < 3) continue; // 至少 "XY " + 1 字符
+			char x = entry[0];
+			char y = entry[1];
+			// 第 3 个字符是空格；空格后是文件名（untruncated） 或 "old -> new"
+			string rest = entry.Substring(3);
+
+			WorkingTreeStatusKind kind;
+			bool staged = x != ' ' && x != '?';
+			bool unstaged = y != ' ' && y != '?';
+			string? oldPath = null;
+			string path = rest;
+
+			// 重命名 / 复制：rest 形如 "old -> new"，且下一条 entry 包含目标路径
+			if ((y == 'R' || y == 'C' || x == 'R' || x == 'C') && rest.Contains(" -> "))
+			{
+				int sep = rest.IndexOf(" -> ", StringComparison.Ordinal);
+				oldPath = rest.Substring(0, sep);
+				// 在 -z 模式下，目标路径是单独的下一段
+				if (i + 1 < entries.Length)
+				{
+					path = entries[++i];
+				}
+				else
+				{
+					path = oldPath;
+				}
+				kind = (y == 'R' || x == 'R') ? WorkingTreeStatusKind.Renamed : WorkingTreeStatusKind.Copied;
+			}
+			else if (x == '?' && y == '?')
+			{
+				kind = WorkingTreeStatusKind.Untracked;
+				staged = false;
+				unstaged = true;
+			}
+			else if (x == 'A' || y == 'A' || (x != ' ' && x != '?' && x != 'M' && x != 'D' && x != 'R' && x != 'C'))
+			{
+				// A 出现在 X 或 Y 上都算 Added
+				kind = WorkingTreeStatusKind.Added;
+			}
+			else if (x == 'D' || y == 'D')
+			{
+				kind = WorkingTreeStatusKind.Deleted;
+			}
+			else
+			{
+				kind = WorkingTreeStatusKind.Modified;
+			}
+			list.Add(new WorkingTreeChange(path, kind, staged, unstaged, oldPath));
+		}
+		return list.ToArray();
+	}
+
 	/// <summary>bt_get_references + 一次性 marshaling（names + 关联 SHA）。</summary>
 	private (string[] Names, string[] Shas) ReadReferencesInternal()
 	{

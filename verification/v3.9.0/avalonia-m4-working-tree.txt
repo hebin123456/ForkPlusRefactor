@@ -1,0 +1,14 @@
+Avalonia M4 工作区改动截屏（3 项）
+ItemsSource 断言：
+  a.txt           kind=Modified   staged=False unstaged=True
+  staged.txt      kind=Added      staged=True  unstaged=False
+  new.txt         kind=Untracked  staged=False unstaged=True
+可视化树徽章颜色断言：
+  a.txt           kind=Modified   badge=#ffe0a060
+  staged.txt      kind=Added      badge=#ff3fa34d
+  new.txt         kind=Untracked  badge=Gray
+Converter 预期颜色：
+  Modified  = #ffe0a060
+  Added     = #ff3fa34d
+  Untracked = Gray
+源仓库：/tmp/forkplus_m4_visual_repo_c250799afb20465ab3615763799bc78a

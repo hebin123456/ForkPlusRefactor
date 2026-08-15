@@ -1,8 +1,13 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:git="using:ForkPlus.Avalonia.Git"
+        xmlns:conv="using:ForkPlus.Avalonia.Converters"
         x:Class="ForkPlus.Avalonia.MainWindow"
         Title="ForkPlus (Avalonia — 迁移起点)"
         Width="1100" Height="700">
+  <Window.Resources>
+    <conv:WorkingTreeStatusKindToBrushConverter x:Key="KindToBrush"/>
+  </Window.Resources>
   <Grid ColumnDefinitions="320,4,*" RowDefinitions="*">
     <!-- 左侧：分支 / 提交列表 -->
     <Border Grid.Column="0" Background="#1e1e1e" Padding="12">
@@ -30,10 +35,44 @@
               <TextBlock FontSize="11" Opacity="0.7">本地 / 远程分支：</TextBlock>
               <ListBox x:Name="BranchesList" Height="160"/>
               <TextBlock FontSize="11" Opacity="0.7" Margin="0,4,0,0">最新提交（M2 · biturbo）：</TextBlock>
-              <ListBox x:Name="CommitsList" Height="220"/>
+              <ListBox x:Name="CommitsList" Height="160"/>
               <DockPanel Margin="0,4,0,0">
                 <Button x:Name="ViewDiffButton" DockPanel.Dock="Right" Content="查看变更（M3）"/>
                 <TextBlock Text="选中一个 commit 后点此按钮，或双击 commit 行，查看该次提交的全部文件 diff。"
+                           FontSize="11" Opacity="0.7" TextWrapping="Wrap" VerticalAlignment="Center"/>
+              </DockPanel>
+            </StackPanel>
+          </Border>
+          <!-- M4：本地改动 -->
+          <Border Background="#252526" CornerRadius="6" Padding="8">
+            <StackPanel Spacing="6">
+              <TextBlock FontWeight="Bold">本地改动（M4）</TextBlock>
+              <TextBlock x:Name="WorkingTreeSummaryText" FontSize="11" Opacity="0.7"
+                         Text="开仓库后这里会列出相对 HEAD 的改动（暂存/未暂存/未跟踪）。"/>
+              <ListBox x:Name="WorkingTreeList" Height="180">
+                <ListBox.ItemTemplate>
+                  <DataTemplate DataType="git:WorkingTreeChange">
+                    <Grid ColumnDefinitions="80,*">
+                      <Border Grid.Column="0" Padding="4,1" Margin="0,0,6,0" CornerRadius="3"
+                              Background="{Binding Kind, Converter={StaticResource KindToBrush}}">
+                        <TextBlock Text="{Binding Kind}" FontSize="10" FontWeight="Bold"
+                                   Foreground="White" HorizontalAlignment="Center"/>
+                      </Border>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Path}" FontFamily="monospace" FontSize="12"/>
+                        <TextBlock FontSize="10" Opacity="0.6">
+                          <Run Text="staged="/><Run Text="{Binding Staged}"/>
+                          <Run Text="  unstaged="/><Run Text="{Binding Unstaged}"/>
+                        </TextBlock>
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <DockPanel>
+                <Button x:Name="ViewWorkingTreeDiffButton" DockPanel.Dock="Right"
+                        Content="查看变更（M4）"/>
+                <TextBlock Text="选中一项改动后点此按钮，或双击，查看该文件 working tree vs HEAD 的 diff。"
                            FontSize="11" Opacity="0.7" TextWrapping="Wrap" VerticalAlignment="Center"/>
               </DockPanel>
             </StackPanel>

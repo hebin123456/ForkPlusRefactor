@@ -30,6 +30,10 @@ public partial class MainWindow : Window
     private ListBox? _branchesList;
     private ListBox? _commitsList;
     private Button? _viewDiffButton;
+    // M4 控件
+    private ListBox? _workingTreeList;
+    private Button? _viewWorkingTreeDiffButton;
+    private TextBlock? _workingTreeSummaryText;
 
     public MainWindow()
     {
@@ -41,6 +45,17 @@ public partial class MainWindow : Window
         _branchesList = this.FindControl<ListBox>("BranchesList");
         _commitsList = this.FindControl<ListBox>("CommitsList");
         _viewDiffButton = this.FindControl<Button>("ViewDiffButton");
+        // M4
+        _workingTreeList = this.FindControl<ListBox>("WorkingTreeList");
+        _viewWorkingTreeDiffButton = this.FindControl<Button>("ViewWorkingTreeDiffButton");
+        _workingTreeSummaryText = this.FindControl<TextBlock>("WorkingTreeSummaryText");
+
+        // M4：初始化时就给工作区 summary 一个真实的 "未打开仓库" 状态，
+        // 避免 XAML 默认 placeholder 文字在不开仓库时也被用户看到。
+        if (_workingTreeSummaryText != null)
+        {
+            _workingTreeSummaryText.Text = "未打开仓库。";
+        }
 
         var ac = ServiceLocator.AppContext;
         if (_servicesText != null)
@@ -77,6 +92,14 @@ public partial class MainWindow : Window
             _commitsList.SelectionChanged += OnCommitSelectionChanged;
             _commitsList.DoubleTapped += (_, _) => OpenSelectedCommitDiff();
         }
+        // M4
+        if (_workingTreeList != null)
+        {
+            _workingTreeList.SelectionChanged += OnWorkingTreeSelectionChanged;
+            _workingTreeList.DoubleTapped += (_, _) => OpenSelectedWorkingTreeDiff();
+        }
+        if (_viewWorkingTreeDiffButton is { } viewWtdBtn)
+            viewWtdBtn.Click += (_, _) => OpenSelectedWorkingTreeDiff();
     }
 
     public void InitializeComponent()
@@ -176,6 +199,8 @@ public void Reset()
             int local = branches.Count(b => b.StartsWith("refs/heads/"));
             if (_statusText != null)
                 _statusText.Text = $"已打开 {path}：共 {branches.Length} 个引用，其中本地分支 {local} 个。点击分支以加载提交（M2）。";
+            // M4：同步刷一次工作区改动
+            LoadWorkingTreeChanges();
         }
         catch (Exception ex)
         {
@@ -270,4 +295,90 @@ public void Reset()
             return null;
         }
     }
+
+    // ============== M4: 本地改动 ==============
+
+    /// <summary>
+    /// M4：加载当前仓库的工作区改动，绑定到 <see cref="_workingTreeList"/>。
+    /// 任何时候开新仓库（或重新按"打开"）都会刷新一次。
+    /// </summary>
+    public void LoadWorkingTreeChanges()
+    {
+        if (_repo == null)
+        {
+            if (_workingTreeList != null) _workingTreeList.ItemsSource = null;
+            if (_workingTreeSummaryText != null) _workingTreeSummaryText.Text = "未打开仓库。";
+            return;
+        }
+        try
+        {
+            WorkingTreeChange[] changes = _repo.GetWorkingTreeChanges();
+            if (_workingTreeList != null) _workingTreeList.ItemsSource = changes;
+            int staged = changes.Count(c => c.Staged);
+            int unstaged = changes.Count(c => c.Unstaged && !c.Untracked());
+            int untracked = changes.Count(c => c.Kind == WorkingTreeStatusKind.Untracked);
+            if (_workingTreeSummaryText != null)
+            {
+                _workingTreeSummaryText.Text = changes.Length == 0
+                    ? "工作区干净（相对 HEAD 无改动）。"
+                    : $"共 {changes.Length} 项：已暂存 {staged}，未暂存 {unstaged}，未跟踪 {untracked}。";
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_workingTreeList != null) _workingTreeList.ItemsSource = null;
+            if (_workingTreeSummaryText != null)
+                _workingTreeSummaryText.Text = "加载工作区失败：" + ex.Message;
+        }
+    }
+
+    private void OnWorkingTreeSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_workingTreeList?.SelectedItem is WorkingTreeChange c)
+        {
+            if (_statusText != null)
+                _statusText.Text = $"已选中工作区改动 {c.Path} ({c.Kind}，staged={c.Staged}，unstaged={c.Unstaged})。双击或点 \"查看变更（M4）\" 打开 diff。";
+        }
+    }
+
+    /// <summary>
+    /// M4：把当前选中的工作区改动经 <see cref="GitRepository.GetWorkingTreeDiff"/> 拿到 DiffResult，
+    /// 新开 <see cref="DiffWindow"/>。返回新窗口实例便于 headless 测试断言；失败返回 null。
+    /// </summary>
+    public DiffWindow? OpenSelectedWorkingTreeDiff()
+    {
+        if (_repo == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
+            return null;
+        }
+        if (_workingTreeList?.SelectedItem is not WorkingTreeChange c)
+        {
+            if (_statusText != null) _statusText.Text = "请先选中一个工作区改动（M4）。";
+            return null;
+        }
+        try
+        {
+            DiffResult diff = _repo.GetWorkingTreeDiff(c.Path);
+            var w = new DiffWindow(diff);
+            w.Show();
+            if (_statusText != null)
+            {
+                _statusText.Text = $"已打开工作区改动 {c.Path} 的 diff：{diff.Lines.Count} 行（{c.Kind}）。";
+            }
+            return w;
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null)
+                _statusText.Text = $"打开 {c.Path} diff 失败：{ex.Message}";
+            return null;
+        }
+    }
+}
+
+internal static class WorkingTreeChangeExt
+{
+    /// <summary>判断是否是 untracked（不在 git 索引里）。</summary>
+    public static bool Untracked(this WorkingTreeChange c) => c.Kind == WorkingTreeStatusKind.Untracked;
 }
