@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private TextBox? _repoPathBox;
     private ListBox? _branchesList;
     private ListBox? _commitsList;
+    private Button? _viewDiffButton;
 
     public MainWindow()
     {
@@ -39,6 +40,7 @@ public partial class MainWindow : Window
         _repoPathBox = this.FindControl<TextBox>("RepoPathBox");
         _branchesList = this.FindControl<ListBox>("BranchesList");
         _commitsList = this.FindControl<ListBox>("CommitsList");
+        _viewDiffButton = this.FindControl<Button>("ViewDiffButton");
 
         var ac = ServiceLocator.AppContext;
         if (_servicesText != null)
@@ -65,9 +67,16 @@ public partial class MainWindow : Window
             aiBtn.Click += OnAiMarkdownClicked;
         if (this.FindControl<Button>("OpenRepoButton") is { } openBtn)
             openBtn.Click += OnOpenRepoClicked;
+        if (_viewDiffButton is { } viewDiffBtn)
+            viewDiffBtn.Click += OnViewDiffClicked;
 
         if (_branchesList != null)
             _branchesList.SelectionChanged += OnBranchSelectionChanged;
+        if (_commitsList != null)
+        {
+            _commitsList.SelectionChanged += OnCommitSelectionChanged;
+            _commitsList.DoubleTapped += (_, _) => OpenSelectedCommitDiff();
+        }
     }
 
     public void InitializeComponent()
@@ -206,6 +215,59 @@ public void Reset()
                 _commitsList.ItemsSource = null;
             if (_statusText != null)
                 _statusText.Text = $"加载 {selected} 提交失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// M3：仅更新状态文字提示，告诉用户已经选中 commit 并提示如何打开 diff。
+    /// </summary>
+    private void OnCommitSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_commitsList?.SelectedItem is GitCommit c)
+        {
+            if (_statusText != null)
+                _statusText.Text = $"已选中 {c.ShortSha}：{c.Subject}。点 \"查看变更（M3）\" 或双击列表行打开 diff。";
+        }
+    }
+
+    private void OnViewDiffClicked(object? sender, RoutedEventArgs e) => OpenSelectedCommitDiff();
+
+    /// <summary>
+    /// M3：把当前选中的 commit 经 <see cref="GitRepository.GetCommitDiff"/> 拿到 DiffResult，
+    /// 新开 <see cref="DiffWindow"/>。对标原 WPF "选中 commit → 在下方编辑区显示该次提交的 diff"。
+    /// 返回新窗口实例，便于 headless 测试断言；失败（未开仓库 / 未选 commit / git 异常）返回 null。
+    /// </summary>
+    public DiffWindow? OpenSelectedCommitDiff()
+    {
+        if (_repo == null)
+        {
+            if (_statusText != null)
+                _statusText.Text = "请先打开一个仓库（M1）。";
+            return null;
+        }
+        if (_commitsList?.SelectedItem is not GitCommit c)
+        {
+            if (_statusText != null)
+                _statusText.Text = "请先选中一个 commit。";
+            return null;
+        }
+        try
+        {
+            DiffResult diff = _repo.GetCommitDiff(c.Sha);
+            var w = new DiffWindow(diff);
+            w.Show();
+            if (_statusText != null)
+            {
+                _statusText.Text = $"已打开 {c.ShortSha} 的 diff：{diff.Lines.Count} 行"
+                    + (diff.Lines.Count > 0 ? "（按 Added/Removed/Unchanged 着色）" : "（该次提交无 tree diff）");
+            }
+            return w;
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null)
+                _statusText.Text = $"打开 {c.ShortSha} diff 失败：{ex.Message}";
+            return null;
         }
     }
 }

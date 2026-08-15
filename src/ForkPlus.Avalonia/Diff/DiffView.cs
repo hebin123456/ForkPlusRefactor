@@ -18,6 +18,9 @@ public sealed class DiffView : UserControl
 {
     private readonly TextEditor _editor;
 
+    /// <summary>最近一次 <see cref="Load"/> 注入的 diff（按行 + 颜色分类），供测试断言。</summary>
+    public DiffResult? Current { get; private set; }
+
     public DiffView()
     {
         _editor = new TextEditor
@@ -27,11 +30,15 @@ public sealed class DiffView : UserControl
             ShowLineNumbers = true,
             IsReadOnly = true,
         };
+        // 显式给一个深色背景，让 Added/Removed 行的浅绿/浅红在视觉上能凸显，
+        // 也避免 headless 渲染时 RTB 拿到一张全白图（M3 视觉截图依赖该背景出像素）。
+        Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
         Content = _editor;
     }
 
     public void Load(DiffResult result)
     {
+        Current = result;
         var lines = new List<DiffLine>(result.Lines);
         var sb = new StringBuilder();
         foreach (var l in lines)

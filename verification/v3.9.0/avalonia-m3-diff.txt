@@ -1,0 +1,8 @@
+Avalonia M3 DiffWindow 截屏（commit=9fb3a99, subject=second commit, lines=5）
+源仓库：/tmp/forkplus_m3_visual_repo_6aae94df206a4304bc8903ecb5199a2c（临时 forkplus_m3_visual_repo_6aae94df206a4304bc8903ecb5199a2c，测试结束自动删除）
+对照：verification/v3.9.0/04-diff-tab.png（原 WPF 差异标签页）
+  alpha
+- beta
++ beta-edited
+  gamma
++ beta-new

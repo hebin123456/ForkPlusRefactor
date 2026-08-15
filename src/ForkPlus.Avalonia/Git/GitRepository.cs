@@ -1,7 +1,10 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using ForkPlus.Avalonia.Diff;
 using ForkPlus.Biturbo;
+using ForkPlus.Services;
 
 namespace ForkPlus.Avalonia.Git;
 
@@ -95,6 +98,71 @@ public sealed class GitRepository : IDisposable
 			Bt.bt_release_commit_storage(ref storage);
 			Bt.bt_release_cancellation_token(ref cancel);
 		}
+	}
+
+	/// <summary>
+	/// M3：获取某个 commit 相对其第一个 parent 的 unified diff（整次提交的全部文件）。
+	/// 首个 commit（无 parent）通过 <c>git show &lt;sha&gt;</c> 取 patch，相对"空树"。
+	///
+	/// <para>
+	/// 实现：直接 spawn 系统 <c>git</c>（由 <see cref="ServiceLocator.IGitPathResolver"/>
+	/// 解析为无扩展名的 <c>git</c>）。biturbo 当前不暴露 <c>git diff-tree</c> 等价 API，
+	/// 故保留 .NET <see cref="Process"/> 通道；biturbo 的 <c>bt_spawn_with_output</c>
+	/// 是其内部替代，公开 API 同形态，可在重构中替换此处以减少跨平台回归面。
+	/// </para>
+	///
+	/// <para>返回的 <see cref="DiffResult"/> 已经把多文件 patch 拍平为单个
+	/// <see cref="DiffLine"/> 序列（文件之间用 Unchanged 标记的横线分隔），可直接喂给
+	/// <see cref="ForkPlus.Avalonia.Diff.DiffView"/>。
+	/// </para>
+	/// </summary>
+	/// <param name="commitSha">完整或前缀 SHA（会被 <c>git rev-parse</c> 解析）。</param>
+	/// <exception cref="ArgumentException">空 SHA 或 git 返回非 0 退出码。</exception>
+	/// <exception cref="GitRepositoryException">git 进程启动失败。</exception>
+	public DiffResult GetCommitDiff(string commitSha)
+	{
+		EnsureNotDisposed();
+		if (string.IsNullOrWhiteSpace(commitSha))
+		{
+			throw new ArgumentException("commitSha 不能为空", nameof(commitSha));
+		}
+
+		// 1) rev-parse 拿完整 SHA + 父 SHA 列表
+		string fullSha = RunGit(commitSha, "rev-parse", "--verify", commitSha.Trim() + "^{commit}").Trim();
+		if (fullSha.Length < 7)
+		{
+			throw new ArgumentException($"无法解析 commit '{commitSha}'（rev-parse 输出为空）。", nameof(commitSha));
+		}
+
+		string parentsOutput = RunGit(fullSha, "rev-list", "-n", "1", "--parents", fullSha).Trim();
+		// 格式：<sha> [<parent_sha>...]
+		string[] parts = parentsOutput.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+		bool hasParent = parts.Length >= 2;
+
+		// 2) 拉 unified diff
+		//    有 parent：git diff <parent> <sha>，得到"两个版本之间"的差异
+		//    无 parent：git show <sha>，包含 commit 头 + patch
+		string unified;
+		if (hasParent)
+		{
+			unified = RunGit(fullSha, "diff", "--no-color", "--no-ext-diff", parts[1], fullSha);
+		}
+		else
+		{
+			// show 输出含 commit 头 + diff；strip 前导到第一个 "diff --git"
+			string showOut = RunGit(fullSha, "show", "--no-color", "--pretty=format:", fullSha);
+			unified = showOut;
+		}
+
+		if (string.IsNullOrWhiteSpace(unified))
+		{
+			// 空 commit（例如 merge-only 或没有 tree diff）：返回空 DiffResult
+			return new DiffResult("a/" + fullSha, "b/" + fullSha, Array.Empty<DiffLine>());
+		}
+
+		return UnifiedDiffParser.Parse(unified,
+			fallbackOldPath: "a/" + fullSha.Substring(0, Math.Min(7, fullSha.Length)),
+			fallbackNewPath: "b/" + fullSha.Substring(0, Math.Min(7, fullSha.Length)));
 	}
 
 	/// <summary>bt_get_references + 一次性 marshaling（names + 关联 SHA）。</summary>
@@ -314,6 +382,46 @@ public sealed class GitRepository : IDisposable
 		{
 			throw new ObjectDisposedException(nameof(GitRepository));
 		}
+	}
+
+	/// <summary>
+	/// 在仓库目录下 spawn <c>git</c>，捕获 stdout；stderr 异常时附在错误信息后。
+	/// 解析 git 路径：优先 <see cref="ServiceLocator.GitPathResolver"/>，否则默认 <c>git</c>。
+	/// </summary>
+	private string RunGit(string forErrorContext, params string[] args)
+	{
+		string git = ServiceLocator.IsInitialized && ServiceLocator.GitPathResolver != null
+			? ServiceLocator.GitPathResolver.GitPath
+			: "git";
+
+		var psi = new ProcessStartInfo
+		{
+			FileName = git,
+			WorkingDirectory = _repoPath,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+			CreateNoWindow = true,
+		};
+		foreach (string a in args)
+		{
+			psi.ArgumentList.Add(a);
+		}
+
+		using var proc = Process.Start(psi);
+		if (proc == null)
+		{
+			throw new GitRepositoryException($"无法启动 '{git}' 进程（{forErrorContext}）");
+		}
+		string stdout = proc.StandardOutput.ReadToEnd();
+		string stderr = proc.StandardError.ReadToEnd();
+		proc.WaitForExit();
+		if (proc.ExitCode != 0)
+		{
+			throw new GitRepositoryException(
+				$"git {string.Join(" ", args)} 失败 (exit {proc.ExitCode})：{stderr.Trim()}");
+		}
+		return stdout;
 	}
 
 	public void Dispose()
