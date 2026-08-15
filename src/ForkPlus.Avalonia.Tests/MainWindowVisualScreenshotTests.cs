@@ -94,7 +94,9 @@ public class MainWindowVisualScreenshotTests
             var panel = window.FindControl<ForkPlus.Avalonia.Panels.CommitDiffPanel>("CommitDiffPanel")!;
             ListBox commits = panel.FindControl<ListBox>("CommitsList")!;
             Assert.NotNull(commits.ItemsSource);
-            var items = commits.ItemsSource!.Cast<GitCommit>().ToArray();
+            // M2 提交图：ItemsSource 是 CommitGraphRow[]，从 row 取 commit
+            var rows = commits.ItemsSource!.Cast<ForkPlus.Avalonia.Graph.CommitGraphRow>().ToArray();
+            var items = rows.Select(r => r.Commit).ToArray();
             Assert.True(items.Length >= 1, "选中 main 分支后 commit 列表应至少含 1 条");
 
             // 4) 用 RenderTargetBitmap 把主窗口直接栅格化到 Bitmap（不依赖 HeadlessDrawing/Skia 链路，

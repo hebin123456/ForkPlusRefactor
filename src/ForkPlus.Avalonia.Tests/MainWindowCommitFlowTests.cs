@@ -92,7 +92,9 @@ public class MainWindowCommitFlowTests
 			var panel = window.FindControl<ForkPlus.Avalonia.Panels.CommitDiffPanel>("CommitDiffPanel")!;
 			ListBox commits = panel.FindControl<ListBox>("CommitsList")!;
 			Assert.NotNull(commits.ItemsSource);
-			var commitItems = commits.ItemsSource!.Cast<GitCommit>().ToArray();
+			// M2 提交图：ItemsSource 是 CommitGraphRow[]，从 row 取 commit
+			var rows = commits.ItemsSource!.Cast<ForkPlus.Avalonia.Graph.CommitGraphRow>().ToArray();
+			var commitItems = rows.Select(r => r.Commit).ToArray();
 			Assert.Equal(3, commitItems.Length);
 			foreach (GitCommit c in commitItems)
 			{

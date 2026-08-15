@@ -1,0 +1,12 @@
+Avalonia M2 多 branch 场景（6 条 commit）
+commit 列表 + 布局：
+  4284268  col=0  color=#ffe0a060  segments=[VerticalSelf]  decorations=[main]
+  66fcc3b  col=0  color=#ffe0a060  segments=[VerticalSelf,VerticalOther,MergeEdge]  decorations=[]
+  de38441  col=0  color=#ffe0a060  segments=[VerticalSelf,VerticalOther]  decorations=[ORIG_HEAD]
+  c68e9db  col=0  color=#ffe0a060  segments=[VerticalSelf,VerticalOther]  decorations=[]
+  88d539a  col=1  color=#ff3fa34d  segments=[VerticalSelf,VerticalOther]  decorations=[feature]
+  2d54317  col=1  color=#ff3fa34d  segments=[VerticalSelf,VerticalOther]  decorations=[]
+
+distinct lane 颜色：2 种
+MergeEdge 段数：1
+源仓库：/tmp/forkplus_m2_multibranch_dd0d6568edcf4be0b905c3d6d7cf3309

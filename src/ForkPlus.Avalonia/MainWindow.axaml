@@ -4,55 +4,62 @@
         x:Class="ForkPlus.Avalonia.MainWindow"
         Title="ForkPlus (Avalonia — 迁移起点)"
         Width="1100" Height="700">
-  <Grid ColumnDefinitions="320,4,*" RowDefinitions="*">
-    <!-- 左侧：分支 / 提交列表 -->
-    <Border Grid.Column="0" Background="#1e1e1e" Padding="12">
+  <!--
+    M2 提交图放主区（跟 WPF 原版一致：commit graph 是主功能，宽面板能容下 5 列
+    [decorations | graph | sha+subject | author+color | date]）。
+    侧栏只放 M1 仓库 / 分支 + M4 工作区改动 + 服务说明。
+  -->
+  <Grid ColumnDefinitions="260,4,*" RowDefinitions="*,Auto">
+
+    <!-- 左侧：仓库/分支 (M1) + 工作区 (M4) + 服务说明 -->
+    <Border Grid.Column="0" Grid.Row="0" Background="#1e1e1e" Padding="12">
       <DockPanel>
-        <StackPanel DockPanel.Dock="Top" Spacing="8">
-          <TextBlock FontSize="18" FontWeight="Bold">ForkPlus · Avalonia 跨平台迁移起点</TextBlock>
-          <TextBlock TextWrapping="Wrap" Opacity="0.85">
-            这是从 WPF 迁移到 Avalonia 的第一个可构建骨架。下方展示已接入的 7 个跨平台服务
-            （原 WPF 工程 ServiceLocator 的接缝）。后续 UI 将逐步从 ForkPlus 的 245 个 XAML 搬运到此处。
-          </TextBlock>
-          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-            <Button x:Name="CopyButton" Content="剪贴板"/>
-            <Button x:Name="ToastButton" Content="通知"/>
-            <Button x:Name="DiffButton" Content="Diff Demo"/>
-            <Button x:Name="PlatformButton" Content="平台服务 Demo"/>
-            <Button x:Name="AiMarkdownButton" Content="AI Markdown"/>
-          </StackPanel>
-          <Border Background="#252526" CornerRadius="6" Padding="8">
-            <StackPanel Spacing="6">
-              <TextBlock FontWeight="Bold">仓库（M1+M2）</TextBlock>
-              <DockPanel>
-                <Button x:Name="OpenRepoButton" DockPanel.Dock="Right" Margin="6,0,0,0" Content="打开"/>
-                <TextBox x:Name="RepoPathBox" Watermark="仓库路径，例如 /path/to/repo"/>
-              </DockPanel>
-              <TextBlock FontSize="11" Opacity="0.7">本地 / 远程分支：</TextBlock>
-              <ListBox x:Name="BranchesList" Height="160"/>
-              <!-- M2 + M3：提交列表 + 查看变更（已抽到 CommitDiffPanel.xaml） -->
-              <panels:CommitDiffPanel x:Name="CommitDiffPanel"/>
+        <ScrollViewer DockPanel.Dock="Top" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="8">
+            <TextBlock FontSize="18" FontWeight="Bold">ForkPlus · Avalonia 跨平台迁移起点</TextBlock>
+            <TextBlock TextWrapping="Wrap" Opacity="0.85" FontSize="11">
+              这是从 WPF 迁移到 Avalonia 的第一个可构建骨架。后续 UI 将逐步从 ForkPlus 的 245 个 XAML 搬运到此处。
+            </TextBlock>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+              <Button x:Name="CopyButton" Content="剪贴板"/>
+              <Button x:Name="ToastButton" Content="通知"/>
+              <Button x:Name="DiffButton" Content="Diff Demo"/>
+              <Button x:Name="PlatformButton" Content="平台服务"/>
+              <Button x:Name="AiMarkdownButton" Content="AI Markdown"/>
             </StackPanel>
-          </Border>
-          <!-- M4：本地改动（已抽到 WorkingTreePanel.xaml） -->
-          <panels:WorkingTreePanel x:Name="WorkingTreePanel"/>
-        </StackPanel>
-        <Border Background="#1e1e1e" CornerRadius="6" Padding="8" Margin="0,8,0,0">
-          <ScrollViewer>
-            <TextBlock x:Name="ServicesText" TextWrapping="Wrap" FontFamily="monospace" FontSize="11"/>
-          </ScrollViewer>
-        </Border>
+            <Border Background="#252526" CornerRadius="6" Padding="8">
+              <StackPanel Spacing="6">
+                <TextBlock FontWeight="Bold">仓库（M1）</TextBlock>
+                <DockPanel>
+                  <Button x:Name="OpenRepoButton" DockPanel.Dock="Right" Margin="6,0,0,0" Content="打开"/>
+                  <TextBox x:Name="RepoPathBox" Watermark="仓库路径，例如 /path/to/repo"/>
+                </DockPanel>
+                <TextBlock FontSize="11" Opacity="0.7">本地 / 远程分支：</TextBlock>
+                <ListBox x:Name="BranchesList" Height="140"/>
+              </StackPanel>
+            </Border>
+            <!-- M4：本地改动（已抽到 WorkingTreePanel.xaml） -->
+            <panels:WorkingTreePanel x:Name="WorkingTreePanel"/>
+            <Border Background="#252526" CornerRadius="6" Padding="8">
+              <ScrollViewer>
+                <TextBlock x:Name="ServicesText" TextWrapping="Wrap" FontFamily="monospace" FontSize="10"/>
+              </ScrollViewer>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
       </DockPanel>
     </Border>
 
-    <GridSplitter Grid.Column="1" Background="#333333" ResizeDirection="Columns"/>
+    <GridSplitter Grid.Column="1" Grid.Row="0" Background="#333333" ResizeDirection="Columns"/>
 
-    <!-- 右侧：服务说明 / 操作日志 -->
-    <Border Grid.Column="2" Background="#1e1e1e" Padding="16">
-      <DockPanel>
-        <TextBlock DockPanel.Dock="Top" FontSize="16" FontWeight="Bold" Margin="0,0,0,8">操作日志</TextBlock>
-        <TextBlock x:Name="StatusText" TextWrapping="Wrap" Opacity="0.9" FontFamily="monospace" FontSize="12"/>
-      </DockPanel>
+    <!-- 主区：M2+M3 提交图（跟 WPF 原版同位：5 列 graph + decoration + sha/subject/author/date） -->
+    <Border Grid.Column="2" Grid.Row="0" Background="#1e1e1e" Padding="12">
+      <panels:CommitDiffPanel x:Name="CommitDiffPanel"/>
+    </Border>
+
+    <!-- 底部：状态栏（横跨全宽） -->
+    <Border Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="3" Background="#252526" Padding="8,4">
+      <TextBlock x:Name="StatusText" TextWrapping="Wrap" Opacity="0.9" FontFamily="monospace" FontSize="11"/>
     </Border>
   </Grid>
 </Window>

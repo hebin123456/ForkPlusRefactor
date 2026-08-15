@@ -86,10 +86,14 @@ public class M3DiffWindowVisualScreenshotTests
             // M2+M3 已抽到 CommitDiffPanel，CommitsList 是面板子节点
             var panel = main.FindControl<ForkPlus.Avalonia.Panels.CommitDiffPanel>("CommitDiffPanel")!;
             ListBox commits = panel.FindControl<ListBox>("CommitsList")!;
-            var commitArr = commits.ItemsSource!.Cast<GitCommit>().ToArray();
+            // M2 提交图：ItemsSource 是 CommitGraphRow[]，从 row 取 commit
+            var rowArr = commits.ItemsSource!.Cast<ForkPlus.Avalonia.Graph.CommitGraphRow>().ToArray();
+            var commitArr = rowArr.Select(r => r.Commit).ToArray();
             Assert.True(commitArr.Length >= 2);
             GitCommit second = commitArr.First(c => c.Subject == "second commit");
-            commits.SelectedItem = second;
+            // M2 提交图：SelectedItem 必须是 CommitGraphRow（不是 GitCommit）
+            var secondRow = rowArr.First(r => r.Commit.Subject == "second commit");
+            commits.SelectedItem = secondRow;
             Dispatcher.UIThread.RunJobs();
 
             DiffWindow? diffWin = main.OpenSelectedCommitDiff();

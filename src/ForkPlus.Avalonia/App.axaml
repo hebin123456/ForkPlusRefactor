@@ -1,8 +1,21 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fluent="clr-namespace:Avalonia.Themes.Fluent;assembly=Avalonia.Themes.Fluent"
+             xmlns:conv="using:ForkPlus.Avalonia.Converters"
              x:Class="ForkPlus.Avalonia.App">
     <Application.Styles>
         <fluent:FluentTheme />
     </Application.Styles>
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary>
+                    <!-- M2：commit graph 行内 converter -->
+                    <conv:LaneColorToFaintBrushConverter x:Key="LaneColorToFaintBrushConverter"/>
+                    <conv:LaneColorToTextBrushConverter x:Key="LaneColorToTextBrushConverter"/>
+                    <conv:AuthorToBrushConverter x:Key="AuthorToBrushConverter"/>
+                </ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
 </Application>

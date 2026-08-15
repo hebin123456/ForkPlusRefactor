@@ -1,0 +1,12 @@
+Avalonia M2 提交图视觉重建（3 行 commit，3 条 commit 来自真实 biturbo 仓库）
+数据流：
+  6c4a7bc  col=0  color=#ffe0a060  segments=1  decorations=[main]
+  9e8fc85  col=0  color=#ffe0a060  segments=1  decorations=[]
+  77c9d41  col=0  color=#ffe0a060  segments=1  decorations=[]
+
+截图：/workspace/ForkPlusRefactor/verification/avalonia/m2-commits/avalonia-m2-graph-rebuilt.png (19562 bytes)
+像素断言：
+  graph lane 像素：找到
+  decoration label 背景像素：找到
+  author 色点像素：找到
+源仓库：/tmp/forkplus_m2_graph_repo_fd5da0e78d4d4a84bd53408ba1082cde

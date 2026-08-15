@@ -1,10 +1,86 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:graph="using:ForkPlus.Avalonia.Graph"
+             xmlns:git="using:ForkPlus.Avalonia.Git"
              x:Class="ForkPlus.Avalonia.Panels.CommitDiffPanel">
   <Border Background="#252526" CornerRadius="6" Padding="8">
     <StackPanel Spacing="6">
-      <TextBlock FontSize="11" Opacity="0.7" Margin="0,4,0,0">最新提交（M2 · biturbo）：</TextBlock>
-      <ListBox x:Name="CommitsList" Height="160"/>
+      <TextBlock FontSize="11" Opacity="0.7" Margin="0,4,0,0">最新提交（M2 · 带提交图 + ref 装饰）：</TextBlock>
+      <ListBox x:Name="CommitsList" Height="260"
+               Background="Transparent"
+               Padding="0">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="graph:CommitGraphRow">
+            <Grid ColumnDefinitions="110,Auto,*,170,100" Margin="2,1" MinHeight="22">
+              <!-- 列 1：ref 装饰（右对齐，label 拼起来） -->
+              <ItemsControl Grid.Column="0"
+                            ItemsSource="{Binding Decorations}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Right"
+                            Margin="0,0,6,0">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="2"/>
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="graph:DecorationLabel">
+                    <Border Background="{Binding LaneColor, Converter={StaticResource LaneColorToFaintBrushConverter}}"
+                            CornerRadius="3"
+                            Padding="6,2">
+                      <TextBlock Text="{Binding Text}"
+                                 FontSize="11"
+                                 Foreground="{Binding LaneColor, Converter={StaticResource LaneColorToTextBrushConverter}}"/>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <!-- 列 2：提交图画布（DAG 线条 + 圆点） -->
+              <graph:CommitGraphCanvas Grid.Column="1"
+                                       Row="{Binding}"
+                                       ColumnWidth="12"
+                                       RowHeight="22"
+                                       DotRadius="4"
+                                       VerticalAlignment="Center"/>
+
+              <!-- 列 3：SHA + subject -->
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="8,0,0,0">
+                <TextBlock Text="{Binding Commit.ShortSha}"
+                           FontFamily="monospace"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="#DCDCDC"/>
+                <TextBlock Text="{Binding Commit.Subject}"
+                           FontSize="12"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="380"
+                           Foreground="#E0E0E0"/>
+              </StackPanel>
+
+              <!-- 列 4：作者 + 色点 -->
+              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <Ellipse Width="10" Height="10"
+                         Fill="{Binding Commit.Author, Converter={StaticResource AuthorToBrushConverter}}"
+                         VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Commit.Author}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Foreground="#C8C8C8"/>
+              </StackPanel>
+
+              <!-- 列 5：日期 -->
+              <TextBlock Grid.Column="4"
+                         Text="{Binding Commit.AuthorTime, StringFormat=\{0:yyyy-MM-dd HH:mm\}}"
+                         FontSize="11"
+                           FontFamily="monospace"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Right"
+                           Foreground="#909090"/>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
       <DockPanel Margin="0,4,0,0">
         <Button x:Name="ViewDiffButton" DockPanel.Dock="Right" Content="查看变更（M3）"/>
         <TextBlock Text="选中一个 commit 后点此按钮，或双击 commit 行，查看该次提交的全部文件 diff。"

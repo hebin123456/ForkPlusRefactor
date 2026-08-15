@@ -33,7 +33,8 @@ public sealed class GitRepository : IDisposable
 
 	/// <summary>
 	/// 列出指定引用（refs/heads/main 等）的最新 <paramref name="maxCount"/> 条提交。
-	/// 流程：bt_get_references 解析 ref → bt_get_commits 拿拓扑 → bt_get_revision_headers 补 subject/author/time。
+	/// 流程：bt_get_references 解析 ref → bt_get_commits 拿拓扑（含 parents） →
+	/// bt_get_revision_headers 补 subject/author/time → 再回到 references 给每个 commit 标注 ref 装饰。
 	/// </summary>
 	/// <param name="refName">完整 ref 名（refs/heads/&lt;name&gt;），或分支短名（自动补全 refs/heads/）。</param>
 	/// <param name="maxCount">最多返回的提交数（page_size）；0 或负数视为 50。</param>
@@ -54,16 +55,16 @@ public sealed class GitRepository : IDisposable
 		string fullRef = NormalizeRefName(refName);
 		string gitDir = ResolveGitDir(_repoPath);
 
-		// 1) 解析 ref → SHA
-		(string[] names, string[] shas) = ReadReferencesInternal();
-		int idx = Array.IndexOf(names, fullRef);
+		// 1) 解析 ref → SHA（一次性拿全仓库的 ref 表，后续给 commit 标 decoration 用）
+		(string[] refNames, string[] refShas) = ReadReferencesInternal();
+		int idx = Array.IndexOf(refNames, fullRef);
 		if (idx < 0)
 		{
 			throw new ArgumentException($"仓库内找不到 ref '{refName}'（已规范化为 '{fullRef}'）。", nameof(refName));
 		}
-		BtOid tip = HexToBtOid(shas[idx]);
+		BtOid tip = HexToBtOid(refShas[idx]);
 
-		// 2) bt_get_commits 拿拓扑
+		// 2) bt_get_commits 拿拓扑 + parents
 		BtCommitGraphCache cache = default;
 		BtCancellationToken cancel = Bt.bt_new_cancellation_token();
 		BtCommitStorage storage = default;
@@ -84,20 +85,80 @@ public sealed class GitRepository : IDisposable
 				throw new GitRepositoryException($"bt_get_commits 失败 ({rc})：{ReadLastErrorMessage()}");
 			}
 
-			string[] commitShas = storage.ExtractCommitShas();
-			if (commitShas.Length == 0)
+			IReadOnlyList<string[]> shasAndParents = storage.ExtractCommitShasAndParents();
+			if (shasAndParents.Count == 0)
 			{
 				return Array.Empty<GitCommit>();
 			}
 
 			// 3) bt_get_revision_headers 补 subject/author/time
-			return ResolveHeaders(gitDir, commitShas);
+			string[] selfShas = new string[shasAndParents.Count];
+			for (int i = 0; i < shasAndParents.Count; i++)
+			{
+				selfShas[i] = shasAndParents[i][0];
+			}
+			GitCommit[] commits = ResolveHeaders(gitDir, selfShas);
+
+			// 4) 把 parents 和 ref 装饰补回 GitCommit
+			//    ref 装饰：去重后只保留我们能识别且 SHA 命中的 ref 短名
+			//    （如 refs/heads/master → "master"，refs/remotes/origin/master → "origin/master"，
+			//    refs/tags/v1.0 → "v1.0"）。stashes 在 WPF 是单独 API，本期不接。
+			var shaToRefs = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+			for (int i = 0; i < refNames.Length; i++)
+			{
+				if (refShas[i] == null) continue;
+				if (!shaToRefs.TryGetValue(refShas[i], out var list))
+				{
+					list = new List<string>();
+					shaToRefs[refShas[i]] = list;
+				}
+				list.Add(ShortenRef(refNames[i]));
+			}
+
+			for (int i = 0; i < commits.Length; i++)
+			{
+				GitCommit baseCommit = commits[i];
+				string[] seg = shasAndParents[i];
+				string[] parents = seg.Length > 1
+					? new ArraySegment<string>(seg, 1, seg.Length - 1).ToArray()
+					: Array.Empty<string>();
+				string[] decorations = shaToRefs.TryGetValue(baseCommit.Sha, out var d)
+					? d.ToArray()
+					: Array.Empty<string>();
+				commits[i] = new GitCommit(
+					baseCommit.Sha, baseCommit.Subject, baseCommit.Author, baseCommit.AuthorTime,
+					parents, decorations);
+			}
+			return commits;
 		}
 		finally
 		{
 			Bt.bt_release_commit_storage(ref storage);
 			Bt.bt_release_cancellation_token(ref cancel);
 		}
+	}
+
+	/// <summary>
+	/// 把 <c>refs/heads/master</c> 压缩为 <c>master</c>、<c>refs/remotes/origin/master</c> 压缩为
+	/// <c>origin/master</c>、<c>refs/tags/v1.0</c> 压缩为 <c>v1.0</c>。保留 HEAD 直接。
+	/// </summary>
+	private static string ShortenRef(string fullName)
+	{
+		if (string.IsNullOrEmpty(fullName)) return fullName;
+		if (fullName == "HEAD") return "HEAD";
+		if (fullName.StartsWith("refs/heads/", StringComparison.Ordinal))
+		{
+			return fullName.Substring("refs/heads/".Length);
+		}
+		if (fullName.StartsWith("refs/remotes/", StringComparison.Ordinal))
+		{
+			return fullName.Substring("refs/remotes/".Length);
+		}
+		if (fullName.StartsWith("refs/tags/", StringComparison.Ordinal))
+		{
+			return fullName.Substring("refs/tags/".Length);
+		}
+		return fullName;
 	}
 
 	/// <summary>
