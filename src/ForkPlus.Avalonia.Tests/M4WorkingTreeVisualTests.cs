@@ -107,7 +107,10 @@ public class M4WorkingTreeVisualTests
             Dispatcher.UIThread.RunJobs();
 
             // 等待 ListBox 完成 ItemContainerGenerator（headless 下需要 explicit RunJobs）
-            ListBox list = main.FindControl<ListBox>("WorkingTreeList")!;
+            // M4 面板已抽到 WorkingTreePanel.xaml，所以 WorkingTreeList/WorkingTreeSummaryText
+            // 是面板的子节点 —— 必须先找到面板，再从面板里 FindControl。
+            var panel = main.FindControl<Panels.WorkingTreePanel>("WorkingTreePanel")!;
+            ListBox list = panel.FindControl<ListBox>("WorkingTreeList")!;
             WaitForItemsGenerated(list, 3);
             Dispatcher.UIThread.RunJobs();
 
@@ -134,7 +137,7 @@ public class M4WorkingTreeVisualTests
 
             // summary 也写出了正确的计数（语义：共 3 项 / 已暂存 1 / 未暂存 1（a.txt 已修改未 add）/ 未跟踪 1（new.txt 不在 index 中））
             // 注意：untracked 在 UI 上单独一组，不计入"未暂存"——这是 ForkPlus 原版的分组约定。
-            TextBlock summary = main.FindControl<TextBlock>("WorkingTreeSummaryText")!;
+            TextBlock summary = panel.FindControl<TextBlock>("WorkingTreeSummaryText")!;
             Assert.Contains("共 3 项", summary.Text);
             Assert.Contains("已暂存 1", summary.Text);
             Assert.Contains("未暂存 1", summary.Text);
@@ -298,14 +301,17 @@ public class M4WorkingTreeVisualTests
         main.Show();
         Dispatcher.UIThread.RunJobs();
 
-        // 不开仓库，summary 应该是 "未打开仓库。"
-        TextBlock summary = main.FindControl<TextBlock>("WorkingTreeSummaryText")!;
-        ListBox list = main.FindControl<ListBox>("WorkingTreeList")!;
+        // 不开仓库，summary 应该是 "未打开仓库。"。
+        // M4 面板已抽到 WorkingTreePanel，所以 WorkingTreeList/WorkingTreeSummaryText
+        // 是面板的子节点 —— 必须先找到面板，再从面板里 FindControl。
+        var panel = main.FindControl<Panels.WorkingTreePanel>("WorkingTreePanel")!;
+        TextBlock summary = panel.FindControl<TextBlock>("WorkingTreeSummaryText")!;
+        ListBox list = panel.FindControl<ListBox>("WorkingTreeList")!;
         Assert.Null(list.ItemsSource);
         Assert.Contains("未打开", summary.Text);
 
         // 点 "查看变更（M4）" 不应崩，应给"请先打开"提示
-        Button btn = main.FindControl<Button>("ViewWorkingTreeDiffButton")!;
+        Button btn = panel.FindControl<Button>("ViewWorkingTreeDiffButton")!;
         btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
         TextBlock status = main.FindControl<TextBlock>("StatusText")!;

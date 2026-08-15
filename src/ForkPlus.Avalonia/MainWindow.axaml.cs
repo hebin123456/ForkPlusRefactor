@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using ForkPlus.Avalonia.Diff;
 using ForkPlus.Avalonia.Git;
+using ForkPlus.Avalonia.Panels;
 using ForkPlus.Services;
 
 namespace ForkPlus.Avalonia;
@@ -18,6 +19,15 @@ namespace ForkPlus.Avalonia;
 /// 因此代码隐藏统一通过 <see cref="Window.FindControl{T}(string)"/> 拿控件。
 /// 这样在交互运行、CI headless 测试等不同上下文中都能稳定取到控件。
 /// </para>
+///
+/// <para>
+/// 主窗口本身只承担"装配 + 弹窗"职责：
+/// </para>
+/// <list type="bullet">
+///   <item>M1 仓库浏览 + M2 提交列表：<see cref="_branchesList"/>/<see cref="_commitsList"/> + 事件处理</item>
+///   <item>M3 提交 diff：<see cref="_viewDiffButton"/> + <see cref="OpenSelectedCommitDiff"/></item>
+///   <item>M4 工作区改动：<see cref="WorkingTreePanel"/> 面板（已抽出到 Panels/WorkingTreePanel.xaml）</item>
+/// </list>
 /// </summary>
 public partial class MainWindow : Window
 {
@@ -30,10 +40,8 @@ public partial class MainWindow : Window
     private ListBox? _branchesList;
     private ListBox? _commitsList;
     private Button? _viewDiffButton;
-    // M4 控件
-    private ListBox? _workingTreeList;
-    private Button? _viewWorkingTreeDiffButton;
-    private TextBlock? _workingTreeSummaryText;
+    // M4 面板（内部已含 ListBox/Button/TextBlock）
+    private WorkingTreePanel? _workingTreePanel;
 
     public MainWindow()
     {
@@ -45,16 +53,15 @@ public partial class MainWindow : Window
         _branchesList = this.FindControl<ListBox>("BranchesList");
         _commitsList = this.FindControl<ListBox>("CommitsList");
         _viewDiffButton = this.FindControl<Button>("ViewDiffButton");
-        // M4
-        _workingTreeList = this.FindControl<ListBox>("WorkingTreeList");
-        _viewWorkingTreeDiffButton = this.FindControl<Button>("ViewWorkingTreeDiffButton");
-        _workingTreeSummaryText = this.FindControl<TextBlock>("WorkingTreeSummaryText");
-
-        // M4：初始化时就给工作区 summary 一个真实的 "未打开仓库" 状态，
-        // 避免 XAML 默认 placeholder 文字在不开仓库时也被用户看到。
-        if (_workingTreeSummaryText != null)
+        // M4 面板
+        _workingTreePanel = this.FindControl<WorkingTreePanel>("WorkingTreePanel");
+        if (_workingTreePanel != null)
         {
-            _workingTreeSummaryText.Text = "未打开仓库。";
+            _workingTreePanel.DiffRequested += OnWorkingTreeDiffRequested;
+            _workingTreePanel.SelectionChangedHint += (_, hint) =>
+            {
+                if (_statusText != null) _statusText.Text = hint;
+            };
         }
 
         var ac = ServiceLocator.AppContext;
@@ -92,14 +99,8 @@ public partial class MainWindow : Window
             _commitsList.SelectionChanged += OnCommitSelectionChanged;
             _commitsList.DoubleTapped += (_, _) => OpenSelectedCommitDiff();
         }
-        // M4
-        if (_workingTreeList != null)
-        {
-            _workingTreeList.SelectionChanged += OnWorkingTreeSelectionChanged;
-            _workingTreeList.DoubleTapped += (_, _) => OpenSelectedWorkingTreeDiff();
-        }
-        if (_viewWorkingTreeDiffButton is { } viewWtdBtn)
-            viewWtdBtn.Click += (_, _) => OpenSelectedWorkingTreeDiff();
+        // M4：WorkingTreePanel 内部已 self-wire 自己的 ListBox/Button 事件，
+        // MainWindow 只通过 DiffRequested 事件接收"用户要看 diff"的意图。
     }
 
     public void InitializeComponent()
@@ -296,65 +297,65 @@ public void Reset()
         }
     }
 
-    // ============== M4: 本地改动 ==============
+    // ============== M4: 本地改动 (delegated to WorkingTreePanel) ==============
 
     /// <summary>
-    /// M4：加载当前仓库的工作区改动，绑定到 <see cref="_workingTreeList"/>。
-    /// 任何时候开新仓库（或重新按"打开"）都会刷新一次。
+    /// M4：把当前仓库传给 <see cref="WorkingTreePanel"/> 让它自己刷。
+    /// 由 <see cref="OpenRepository"/> 在拿到新 <see cref="GitRepository"/> 后调用。
     /// </summary>
     public void LoadWorkingTreeChanges()
     {
-        if (_repo == null)
-        {
-            if (_workingTreeList != null) _workingTreeList.ItemsSource = null;
-            if (_workingTreeSummaryText != null) _workingTreeSummaryText.Text = "未打开仓库。";
-            return;
-        }
-        try
-        {
-            WorkingTreeChange[] changes = _repo.GetWorkingTreeChanges();
-            if (_workingTreeList != null) _workingTreeList.ItemsSource = changes;
-            int staged = changes.Count(c => c.Staged);
-            int unstaged = changes.Count(c => c.Unstaged && !c.Untracked());
-            int untracked = changes.Count(c => c.Kind == WorkingTreeStatusKind.Untracked);
-            if (_workingTreeSummaryText != null)
-            {
-                _workingTreeSummaryText.Text = changes.Length == 0
-                    ? "工作区干净（相对 HEAD 无改动）。"
-                    : $"共 {changes.Length} 项：已暂存 {staged}，未暂存 {unstaged}，未跟踪 {untracked}。";
-            }
-        }
-        catch (Exception ex)
-        {
-            if (_workingTreeList != null) _workingTreeList.ItemsSource = null;
-            if (_workingTreeSummaryText != null)
-                _workingTreeSummaryText.Text = "加载工作区失败：" + ex.Message;
-        }
-    }
-
-    private void OnWorkingTreeSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (_workingTreeList?.SelectedItem is WorkingTreeChange c)
-        {
-            if (_statusText != null)
-                _statusText.Text = $"已选中工作区改动 {c.Path} ({c.Kind}，staged={c.Staged}，unstaged={c.Unstaged})。双击或点 \"查看变更（M4）\" 打开 diff。";
-        }
+        _workingTreePanel?.Load(_repo);
     }
 
     /// <summary>
-    /// M4：把当前选中的工作区改动经 <see cref="GitRepository.GetWorkingTreeDiff"/> 拿到 DiffResult，
-    /// 新开 <see cref="DiffWindow"/>。返回新窗口实例便于 headless 测试断言；失败返回 null。
+    /// M4：处理 <see cref="WorkingTreePanel.DiffRequested"/> 事件 —— 弹 <see cref="DiffWindow"/>。
+    /// 弹窗策略归 MainWindow（嵌入 vs 独立窗口 vs 多窗口），面板只负责"用户要看 diff"这一个意图。
     /// </summary>
-    public DiffWindow? OpenSelectedWorkingTreeDiff()
+    private void OnWorkingTreeDiffRequested(object? sender, WorkingTreeChange? c)
     {
         if (_repo == null)
         {
             if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
-            return null;
+            return;
         }
-        if (_workingTreeList?.SelectedItem is not WorkingTreeChange c)
+        if (c == null)
         {
             if (_statusText != null) _statusText.Text = "请先选中一个工作区改动（M4）。";
+            return;
+        }
+        try
+        {
+            DiffResult diff = _repo.GetWorkingTreeDiff(c.Path);
+            var w = new DiffWindow(diff);
+            w.Show();
+            if (_statusText != null)
+            {
+                _statusText.Text = $"已打开工作区改动 {c.Path} 的 diff：{diff.Lines.Count} 行（{c.Kind}）。";
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null)
+                _statusText.Text = $"打开 {c.Path} diff 失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// M4：旧 API 兼容（被 headless 测试 <c>M4WorkingTreeVisualTests.M4_OpenRepo_...</c>
+    /// 直接调来弹窗）。走"面板选中的项 → MainWindow 弹窗"路径，行为与点按钮一致。
+    /// </summary>
+    public DiffWindow? OpenSelectedWorkingTreeDiff()
+    {
+        var c = _workingTreePanel?.SelectedChange;
+        if (_repo == null || c == null)
+        {
+            if (_statusText != null)
+            {
+                _statusText.Text = _repo == null
+                    ? "请先打开一个仓库（M1）。"
+                    : "请先选中一个工作区改动（M4）。";
+            }
             return null;
         }
         try
