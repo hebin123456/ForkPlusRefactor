@@ -54,6 +54,7 @@ namespace ForkPlus.Avalonia.Tests;
 ///   </item>
 /// </list>
 /// </summary>
+[Collection(nameof(AvaloniaHeadlessCollection))]
 public class M4WorkingTreeVisualTests
 {
     private static readonly Color ModifiedBrush  = Color.FromRgb(0xE0, 0xA0, 0x60);

@@ -30,6 +30,7 @@ namespace ForkPlus.Avalonia.Tests;
 /// </list>
 /// 即不只是"窗口被栅格化"，而是"diff 的语义分类（Added/Removed）被真实地画进像素"。
 /// </summary>
+[Collection(nameof(AvaloniaHeadlessCollection))]
 public class M3DiffWindowVisualScreenshotTests
 {
     private static readonly Color AddedBg = Color.FromRgb(0xE6, 0xFF, 0xE6);

@@ -12,6 +12,7 @@ namespace ForkPlus.Avalonia.Tests;
 /// <see cref="AvaloniaMarkdownViewer"/>（P4 交付物），断言其可视化树，验证该自研渲染控件在
 /// 无头环境下可用。[AvaloniaFact] 自动拉起 headless Application，无需启动完整 App。
 /// </summary>
+[Collection(nameof(AvaloniaHeadlessCollection))]
 public class MarkdownViewerHeadlessTests
 {
 	[AvaloniaFact]

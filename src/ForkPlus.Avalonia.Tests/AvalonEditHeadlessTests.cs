@@ -11,6 +11,7 @@ namespace ForkPlus.Avalonia.Tests;
 /// 构造 TextEditor 并验证 Text 属性可写入/读回，证明该控件能在 net10.0 + Avalonia 12 栈上成功
 /// 实例化——即差异视图的底层控件可用（M0 的 AvalonEdit 接线完成）。
 /// </summary>
+[Collection(nameof(AvaloniaHeadlessCollection))]
 public class AvalonEditHeadlessTests
 {
 	[AvaloniaFact]

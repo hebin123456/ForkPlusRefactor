@@ -20,6 +20,7 @@ namespace ForkPlus.Avalonia.Tests;
 /// 对应原 WPF 工程 ForkPlus/UI/MainWindow.xaml 的"打开仓库 → 选中分支 → 看到提交列表"主流程。
 /// [AvaloniaFact] 自动拉起 headless Application。
 /// </summary>
+[Collection(nameof(AvaloniaHeadlessCollection))]
 public class MainWindowCommitFlowTests
 {
 	// [AvaloniaFact] 会拉起一个新的 headless App，但不会触发 App.OnFrameworkInitializationCompleted

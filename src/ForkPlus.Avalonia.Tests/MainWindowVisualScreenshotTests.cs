@@ -32,6 +32,7 @@ namespace ForkPlus.Avalonia.Tests;
 /// 启动器 <see cref="SkiaHeadlessTestApp"/>（在 AssemblyInfo.cs 用 [assembly: AvaloniaTestApplication] 挂上）
 /// 强制走 Skia CPU 渲染（默认 stub renderer 不画像素，RTB.Save 会写出 0 字节 PNG）。
 /// </summary>
+[Collection(nameof(AvaloniaHeadlessCollection))]
 public class MainWindowVisualScreenshotTests
 {
     private static bool _servicesInitialized;

@@ -30,6 +30,7 @@ namespace ForkPlus.Avalonia.Tests;
 /// （新窗口直接出现在 <see cref="IClassicDesktopStyleApplicationLifetime.Windows"/>），
 /// 也方便截图到 verification/ 目录。
 /// </summary>
+[Collection(nameof(AvaloniaHeadlessCollection))]
 public class M3DiffWindowUiTests
 {
     private static bool _servicesInitialized;
