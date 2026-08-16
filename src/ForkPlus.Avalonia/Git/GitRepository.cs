@@ -445,6 +445,87 @@ public sealed class GitRepository : IDisposable
 	}
 
 	/// <summary>
+	/// M7：列出当前仓库所有 tag（含 annotated + lightweight，按字典序）。
+	/// <para>
+	/// 对应 <c>git for-each-ref --format=... refs/tags/</c>，每行 6 段 ASCII Unit Separator
+	/// (<c>\u001f</c>) 分隔：
+	/// <list type="bullet">
+	///   <item><c>%(refname:short)</c> → tag 短名（<c>v1.0.0</c>）</item>
+	///   <item><c>%(objectname)</c> → tag 自身 SHA（annotated 为 tag commit，lightweight 为 target commit）</item>
+	///   <item><c>%(objecttype)</c> → "tag" / "commit"（用于判定 annotated）</item>
+	///   <item><c>%(*objectname)</c> → peeled 后的 commit SHA（lightweight 为空）</item>
+	///   <item><c>%(taggername) %(taggeremail)</c> → tagger 身份（lightweight 为空）</item>
+	///   <item><c>%(taggerdate:iso-strict)</c> → tag 时间（lightweight 为空）</item>
+	/// </list>
+	/// 用 <c>\u001f</c>（ASCII Unit Separator）做字段分隔，避免与 tag name / tagger 中可能含的
+	/// <c>|</c> 等普通分隔符冲突。
+	/// 跨平台实现走 git CLI；biturbo 的 <c>bt_get_tags</c> 公开 API 暂未确认，CLI 路径简单稳定可移植。
+	/// </para>
+	/// </summary>
+	/// <returns>按 tag 短名字典序的 GitTag 数组；无 tag 返回空数组。</returns>
+	/// <exception cref="GitRepositoryException">git 进程启动失败。</exception>
+	public GitTag[] GetTags()
+	{
+		EnsureNotDisposed();
+		const char Sep = '\u001f';
+		string fmt =
+			$"%(refname:short){Sep}%(objectname){Sep}%(objecttype){Sep}%(*objectname){Sep}%(taggername) %(taggeremail){Sep}%(taggerdate:iso-strict)";
+		string raw = RunGit("for-each-ref-tags", "for-each-ref", "--format=" + fmt, "refs/tags/");
+		if (string.IsNullOrWhiteSpace(raw))
+		{
+			return Array.Empty<GitTag>();
+		}
+		string[] lines = raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+		var list = new List<GitTag>(lines.Length);
+		for (int i = 0; i < lines.Length; i++)
+		{
+			// 6 段：name, sha, type, peeled, tagger, date
+			string[] parts = lines[i].Split(Sep);
+			if (parts.Length < 6) continue;
+			string name = parts[0];
+			string sha = parts[1];
+			string type = parts[2];
+			string peeled = parts[3];
+			string tagger = parts[4];
+			string dateStr = parts[5];
+			bool isAnnotated = type == "tag";
+			// lightweight tag 没有 peeled 字段 → 回退到 sha
+			if (string.IsNullOrEmpty(peeled))
+			{
+				peeled = sha;
+			}
+			DateTimeOffset tagDate = DateTimeOffset.MinValue;
+			if (!string.IsNullOrWhiteSpace(dateStr) && DateTimeOffset.TryParse(dateStr, out var parsed))
+			{
+				tagDate = parsed;
+			}
+			list.Add(new GitTag(name, sha, peeled, isAnnotated, tagger, tagDate));
+		}
+		// git for-each-ref 默认按 refname 排序；M7 显式按 name 字典序排一遍（去掉 refs/tags/ 前缀后）
+		list.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+		return list.ToArray();
+	}
+
+	/// <summary>
+	/// M7：删除一个本地 tag（<c>git tag -d &lt;name&gt;</c>）。
+	/// <para>
+	/// M7 阶段只支持删除本地 tag。删除远程 tag（<c>git push origin :&lt;name&gt;</c>）涉及远端认证，
+	/// 放到后续阶段。
+	/// </para>
+	/// </summary>
+	/// <exception cref="ArgumentException">tagName 为空。</exception>
+	/// <exception cref="GitRepositoryException">tag 不存在或 git 失败。</exception>
+	public void DeleteLocalTag(string tagName)
+	{
+		EnsureNotDisposed();
+		if (string.IsNullOrWhiteSpace(tagName))
+		{
+			throw new ArgumentException("tagName 不能为空", nameof(tagName));
+		}
+		RunGit("tag-delete", "tag", "-d", tagName.Trim());
+	}
+
+	/// <summary>
 	/// M6：列出当前仓库所有 stash 条目。
 	/// <para>
 	/// 对应 <c>git stash list --format=%gd|%H|%s</c>：

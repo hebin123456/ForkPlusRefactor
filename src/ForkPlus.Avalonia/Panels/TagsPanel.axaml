@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:git="using:ForkPlus.Avalonia.Git"
+             xmlns:conv="using:ForkPlus.Avalonia.Converters"
+             x:Class="ForkPlus.Avalonia.Panels.TagsPanel">
+  <UserControl.Resources>
+    <conv:GitTagKindToBrushConverter x:Key="KindToBrush"/>
+    <conv:GitTagKindToBadgeTextConverter x:Key="KindToBadge"/>
+  </UserControl.Resources>
+  <Border Background="#252526" CornerRadius="6" Padding="8">
+    <StackPanel Spacing="6">
+      <TextBlock FontWeight="Bold">标签（M7）</TextBlock>
+      <TextBlock x:Name="TagsSummaryText" FontSize="11" Opacity="0.7"
+                 Text="开仓库后这里会列出 git tag -l，按字典序。[a]=annotated 带元数据，[l]=lightweight。" TextWrapping="Wrap"/>
+      <ListBox x:Name="TagsList" Height="160">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="git:GitTag">
+            <Grid ColumnDefinitions="22,*" Margin="0,1">
+              <Border Grid.Column="0" Padding="4,1" CornerRadius="3"
+                      Background="{Binding IsAnnotated, Converter={StaticResource KindToBrush}}">
+                <TextBlock Text="{Binding IsAnnotated, Converter={StaticResource KindToBadge}}"
+                           FontSize="10" FontWeight="Bold" Foreground="White"
+                           HorizontalAlignment="Center"/>
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Name}" FontFamily="monospace" FontSize="12"/>
+                <TextBlock FontSize="10" Opacity="0.6" FontFamily="monospace">
+                  <Run Text="sha="/><Run Text="{Binding PeeledSha}"/>
+                </TextBlock>
+              </StackPanel>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+          <Button x:Name="ViewTagButton" Content="查看 commit"/>
+          <Button x:Name="DeleteTagButton" Content="删除 (delete)"/>
+        </StackPanel>
+        <TextBlock Text="选中一条 tag 后可跳到该 commit，或删除（只删本地 refs/tags/&lt;name&gt;）。"
+                   FontSize="11" Opacity="0.7" TextWrapping="Wrap" VerticalAlignment="Center"/>
+      </DockPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

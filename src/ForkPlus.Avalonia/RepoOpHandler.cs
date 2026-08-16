@@ -7,8 +7,8 @@ using ForkPlus.Avalonia.Panels;
 namespace ForkPlus.Avalonia;
 
 /// <summary>
-/// M1 + M2 + M5 + M6 仓库/分支/提交/文件树/贮藏加载操作处理器：把"打开 GitRepository → 拉分支 → 选分支拉提交
-/// → 拉文件树 → 拉 stash"这一串跨 vertical slice 的协调逻辑从 <see cref="MainWindow"/> 抽出来。
+/// M1 + M2 + M5 + M6 + M7 仓库/分支/提交/文件树/贮藏/标签加载操作处理器：把"打开 GitRepository → 拉分支 → 选分支拉提交
+/// → 拉文件树 → 拉 stash → 拉 tag"这一串跨 vertical slice 的协调逻辑从 <see cref="MainWindow"/> 抽出来。
 ///
 /// <para>
 /// 之前 <see cref="MainWindow"/> 把 M1（仓库+分支）和 M2（提交列表）逻辑都内联在自己身上，
@@ -17,11 +17,12 @@ namespace ForkPlus.Avalonia;
 /// <list type="bullet">
 ///   <item>M1：<see cref="Open"/> 给路径 → 创建 <see cref="GitRepository"/> → 拉 <c>GetBranches()</c> →
 ///         把分支列表喂给传入的 branchesList；同时清空 commit 列表（开新仓库） + 刷工作区（M4） + 刷文件树（M5）
-///         + 刷贮藏列表（M6）</item>
+///         + 刷贮藏列表（M6） + 刷标签列表（M7）</item>
 ///   <item>M2：<see cref="SelectBranch"/> 给分支名 → <c>GetCommits(branch, 50)</c> →
 ///         把提交列表喂给传入的 <see cref="CommitDiffPanel"/></item>
 ///   <item>M5：开新仓库时同步刷一次文件树（HEAD）</item>
 ///   <item>M6：开新仓库时同步刷一次贮藏列表（不依赖分支）</item>
+///   <item>M7：开新仓库时同步刷一次标签列表（不依赖分支）</item>
 /// </list>
 ///
 /// <para>
@@ -37,8 +38,9 @@ public class RepoOpHandler
     private readonly TextBlock? _statusText;
     private readonly FileTreePanel? _fileTreePanel;
     private readonly StashPanel? _stashPanel;
+    private readonly TagsPanel? _tagsPanel;
 
-    /// <summary>当前打开的仓库。M3 / M4 / M5 / M6 在需要拿 diff / content 时读这个字段。</summary>
+    /// <summary>当前打开的仓库。M3 / M4 / M5 / M6 / M7 在需要拿 diff / content 时读这个字段。</summary>
     public GitRepository? CurrentRepo { get; private set; }
 
     public RepoOpHandler(
@@ -47,7 +49,8 @@ public class RepoOpHandler
         WorkingTreePanel? workingTreePanel,
         TextBlock? statusText,
         FileTreePanel? fileTreePanel = null,
-        StashPanel? stashPanel = null)
+        StashPanel? stashPanel = null,
+        TagsPanel? tagsPanel = null)
     {
         _branchesList = branchesList;
         _commitDiffPanel = commitDiffPanel;
@@ -55,6 +58,7 @@ public class RepoOpHandler
         _statusText = statusText;
         _fileTreePanel = fileTreePanel;
         _stashPanel = stashPanel;
+        _tagsPanel = tagsPanel;
     }
 
     /// <summary>
@@ -87,6 +91,8 @@ public class RepoOpHandler
             _fileTreePanel?.Load(CurrentRepo, "HEAD");
             // M6：同步刷一次贮藏列表
             _stashPanel?.Load(CurrentRepo);
+            // M7：同步刷一次标签列表
+            _tagsPanel?.Load(CurrentRepo);
         }
         catch (Exception ex)
         {

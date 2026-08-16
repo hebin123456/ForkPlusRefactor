@@ -42,6 +42,8 @@
             <panels:FileTreePanel x:Name="FileTreePanel"/>
             <!-- M6：贮藏（已抽到 StashPanel.xaml） -->
             <panels:StashPanel x:Name="StashPanel"/>
+            <!-- M7：标签（已抽到 TagsPanel.xaml） -->
+            <panels:TagsPanel x:Name="TagsPanel"/>
             <!-- M4：本地改动（已抽到 WorkingTreePanel.xaml） -->
             <panels:WorkingTreePanel x:Name="WorkingTreePanel"/>
             <Border Background="#252526" CornerRadius="6" Padding="8">

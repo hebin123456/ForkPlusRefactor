@@ -29,6 +29,7 @@ namespace ForkPlus.Avalonia;
 ///   <item>M4 工作区改动：<see cref="WorkingTreePanel"/> 面板（已抽出到 Panels/WorkingTreePanel.xaml）</item>
 ///   <item>M5 文件树 + 文件预览：<see cref="FileTreePanel"/> 面板（已抽出到 Panels/FileTreePanel.xaml）</item>
 ///   <item>M6 贮藏 (stash) 列表 + apply/pop/drop：<see cref="StashPanel"/> 面板（已抽出到 Panels/StashPanel.xaml）</item>
+///   <item>M7 标签 (tag) 列表 + 查看 commit / 删除：<see cref="TagsPanel"/> 面板（已抽出到 Panels/TagsPanel.xaml）</item>
 /// </list>
 /// </summary>
 public partial class MainWindow : Window
@@ -52,6 +53,8 @@ public partial class MainWindow : Window
     private TextBlock? _filePreviewText;
     // M6 面板（内部已含 ListBox + Apply/Pop/Drop/ShowDiff 按钮）
     private StashPanel? _stashPanel;
+    // M7 面板（内部已含 ListBox + View/Delete 按钮）
+    private TagsPanel? _tagsPanel;
 
     public MainWindow()
     {
@@ -106,8 +109,19 @@ public partial class MainWindow : Window
                 if (_statusText != null) _statusText.Text = hint;
             };
         }
+        // M7 面板
+        _tagsPanel = this.FindControl<TagsPanel>("TagsPanel");
+        if (_tagsPanel != null)
+        {
+            _tagsPanel.ViewRequested += OnTagViewRequested;
+            _tagsPanel.DeleteRequested += OnTagDeleteRequested;
+            _tagsPanel.SelectionChangedHint += (_, hint) =>
+            {
+                if (_statusText != null) _statusText.Text = hint;
+            };
+        }
         // M1+M2 操作处理器：装配好之后才能订阅分支变化
-        _repoOps = new RepoOpHandler(_branchesList, _commitDiffPanel, _workingTreePanel, _statusText, _fileTreePanel, _stashPanel);
+        _repoOps = new RepoOpHandler(_branchesList, _commitDiffPanel, _workingTreePanel, _statusText, _fileTreePanel, _stashPanel, _tagsPanel);
 
         var ac = ServiceLocator.AppContext;
         if (_servicesText != null)
@@ -574,6 +588,82 @@ public void Reset()
         catch (Exception ex)
         {
             if (_statusText != null) _statusText.Text = $"打开 {s.ReflogSelector} diff 失败：{ex.Message}";
+        }
+    }
+
+    // ============== M7: 标签 (delegated to TagsPanel) ==============
+
+    /// <summary>
+    /// M7：处理 <see cref="TagsPanel.ViewRequested"/> —— 调
+    /// <see cref="GitRepository.GetCommits"/> 拿该 tag 指向 commit 所在分支的提交列表，
+    /// 并把 diff 面板的高亮也指向这条 commit（如果有）。
+    /// <para>
+    /// M7 阶段只做"跳到 commit"语义：选一条 tag → reload commit 列表 → 状态栏提示。
+    /// 不做 WPF 原版的"重置到 tag"对话框（涉及 hard reset / detach HEAD 等危险操作）。
+    /// </para>
+    /// </summary>
+    private void OnTagViewRequested(object? sender, GitTag? t)
+    {
+        if (_repoOps?.CurrentRepo == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
+            return;
+        }
+        if (t == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先选中一个 tag（M7）。";
+            return;
+        }
+        try
+        {
+            // 找包含此 commit 的任意本地分支（refs/heads/*），让 commit 列表有数据可显示
+            string[] refs = _repoOps.CurrentRepo.GetBranches();
+            string? branch = refs.FirstOrDefault(r => r.StartsWith("refs/heads/", StringComparison.Ordinal));
+            if (branch == null)
+            {
+                if (_statusText != null)
+                    _statusText.Text = $"tag {t.Name} 指向 {t.ShortSha}，但仓库内无本地分支可作为 commit 列表的源。";
+                return;
+            }
+            _repoOps.SelectBranch(branch);
+            // 状态栏：告知用户这个 tag 指向哪个 commit / 哪个分支
+            if (_statusText != null)
+            {
+                string kind = t.IsAnnotated ? "annotated" : "lightweight";
+                _statusText.Text = $"tag {t.Name}（{kind}）→ {t.ShortSha}，已加载分支 {branch} 的最新提交。";
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null) _statusText.Text = $"查看 tag {t.Name} 失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// M7：处理 <see cref="TagsPanel.DeleteRequested"/> —— 调
+    /// <see cref="GitRepository.DeleteLocalTag"/> 删除本地 tag，然后 reload 本面板。
+    /// </summary>
+    private void OnTagDeleteRequested(object? sender, GitTag? t)
+    {
+        if (_repoOps?.CurrentRepo == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
+            return;
+        }
+        if (t == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先选中一个 tag（M7）。";
+            return;
+        }
+        try
+        {
+            _repoOps.CurrentRepo.DeleteLocalTag(t.Name);
+            _tagsPanel?.Reload();
+            if (_statusText != null) _statusText.Text = $"已删除本地 tag {t.Name}（refs/tags/{t.Name}）。";
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null) _statusText.Text = $"删除 tag {t.Name} 失败：{ex.Message}";
         }
     }
 }

@@ -42,6 +42,11 @@ verification/
         ├── avalonia-m6-stash-mainwindow.png
         ├── avalonia-m6-stash.txt
         └── 进度-M6.md         ← M6 设计取舍 / 视觉断言细节
+    └── m7-tags/               ← M7：标签 (tag) 列表 + 查看 commit / 删除
+        ├── avalonia-m7-tags.png
+        ├── avalonia-m7-tags-mainwindow.png
+        ├── avalonia-m7-tags.txt
+        └── 进度-M7.md         ← M7 设计取舍 / 视觉断言细节
 ```
 
 ## 区分原则

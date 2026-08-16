@@ -1,0 +1,19 @@
+Avalonia M7 tag 截屏（4 条 tag）
+数据流断言：
+  删前 4 条 tag（已删除 v0.1.0），删除后剩 3 条
+  截图用 4 条 tag（另一个仓库 /tmp/forkplus_m7_visual_repo_69bfb4198cc64c6cadbfb47de5223fc5）
+  tag 列表（按字典序）:
+    [l]  v0.1.0  peeled=26c3043
+    [a]  v0.2.0  peeled=4d117ab
+    [a]  v1.0.0  peeled=6214a0d
+    [l]  v1.1.0  peeled=665a5ad
+可视化徽章颜色断言：
+  AnnotatedBrush  = #ffa05f2a (A05F2A)
+  LightweightBrush = #ff6e6e6e (6E6E6E)
+  找到 4 个徽章颜色
+操作语义断言：
+  DeleteLocalTag('v0.1.0') → refs/tags/v0.1.0 真实删除，GetTags 从 4 变 3
+  DeleteLocalTag 不存在的 tag → 抛 GitRepositoryException
+  DeleteLocalTag('') / ('   ') → 抛 ArgumentException
+源仓库：/tmp/forkplus_m7_visual_repo_a24fc74c56ed4be6b995accef7408f60
+截图仓库：/tmp/forkplus_m7_visual_repo_69bfb4198cc64c6cadbfb47de5223fc5
