@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dialogs="clr-namespace:ForkPlus.Avalonia.Dialogs"
+        x:Class="ForkPlus.Avalonia.Dialogs.CreateWorktreeWindow"
+        x:DataType="dialogs:CreateWorktreeViewModel"
+        Width="590" SizeToContent="Height"
+        Title="{Binding DialogTitle}"
+        WindowStartupLocation="CenterOwner">
+  <Grid Margin="10">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="80"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="1" Grid.Column="1" Margin="0,8,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+
+      <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right"
+                 Text="{Binding StartFromLabel}" FontSize="13"/>
+      <ComboBox Grid.Row="0" Grid.Column="1" Margin="8,4,0,4"
+                HorizontalAlignment="Stretch"
+                ItemsSource="{Binding Branches}"
+                SelectedItem="{Binding SelectedBranch, Mode=TwoWay}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate DataType="dialogs:BranchItem">
+            <TextBlock Text="{Binding BranchName}" FontSize="13" VerticalAlignment="Center"/>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,5,0,0" FontSize="13"
+                 VerticalAlignment="Center" HorizontalAlignment="Right"
+                 Text="{Binding BranchNameLabel}"/>
+      <TextBox Grid.Row="1" Grid.Column="1" Margin="8,5,0,0" Padding="1,2,2,2"
+               Watermark="{Binding BranchNamePlaceholder}"
+               Text="{Binding BranchName, Mode=TwoWay}"/>
+
+      <TextBlock Grid.Column="0" Grid.Row="2" Margin="0,5,0,0" Text="{Binding LocationLabel}"
+                 FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+      <Grid Grid.Column="1" Grid.Row="2" Margin="0,5,0,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <TextBox Grid.Column="0" Margin="8,4,0,4" Padding="4,2,4,2"
+                 Text="{Binding Path, Mode=TwoWay}"/>
+        <Button Grid.Column="1" Width="28" Height="28" Margin="4,0,0,0"
+                Content="…" Click="OnBrowse"/>
+      </Grid>
+    </Grid>
+
+    <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="OnCancel"/>
+      <Button Content="{Binding SubmitButtonTitle}" Width="80" Classes="accent" Click="OnOk"/>
+    </StackPanel>
+  </Grid>
+</Window>

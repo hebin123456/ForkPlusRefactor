@@ -1,0 +1,26 @@
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
+
+namespace ForkPlus.Avalonia.Dialogs;
+
+public partial class GitFlowStartHotfixWindow : Window
+{
+    public GitFlowStartHotfixViewModel ViewModel { get; } = new();
+
+    public GitFlowStartHotfixWindow()
+    {
+        DataContext = ViewModel;
+        InitializeComponent();
+    }
+
+    private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
+
+    public (string FullName, BranchItem? StartPoint)? GetResult() =>
+        string.IsNullOrWhiteSpace(ViewModel.Name)
+            ? null
+            : (ViewModel.FullName, ViewModel.SelectedBranch);
+
+    private void OnCancel(object? sender, RoutedEventArgs e) => Close(null);
+    private void OnOk(object? sender, RoutedEventArgs e) => Close(GetResult());
+}

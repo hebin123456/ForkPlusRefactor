@@ -11,5 +11,5 @@ Avalonia M8 branches 截屏
   加载远程分支 origin/feature/login → 4 个 commit
   detached HEAD → GetCurrentBranch() == ""
   空仓库 → GetBranchTree() 返回 [本地(空)]
-源仓库：/tmp/forkplus_m8_visual_repo_c6bd804c62724b4eabd80dfba0a5c9e1
-截图仓库：/tmp/forkplus_m8_visual_repo_3a60aeecfd99447c86720f8cce3076f9
+源仓库：/tmp/forkplus_m8_visual_repo_4f7960adf73e4480a7379201124de757
+截图仓库：/tmp/forkplus_m8_visual_repo_d0530ce2550b42f7b45167f633252356

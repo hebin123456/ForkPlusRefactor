@@ -19,4 +19,4 @@ Converter 预期颜色：
 文件内容断言：
   HEAD:README.md = Hello from M5 fixture!\n
   HEAD:src/main.cs = // M5 fixture main\nConsole.WriteLine("hi");\n
-源仓库：/tmp/forkplus_m5_visual_repo_e0a78c6fc4e34308bc93443cea2195dd
+源仓库：/tmp/forkplus_m5_visual_repo_423115e5d85948c780aaff378e293e07
