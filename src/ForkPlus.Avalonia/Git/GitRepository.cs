@@ -25,11 +25,164 @@ public sealed class GitRepository : IDisposable
 	}
 
 	/// <summary>返回仓库全部引用名（refs/heads/*、refs/remotes/*、HEAD 等）。</summary>
-	public string[] GetBranches()
-	{
-		(string[] names, string[] _) = ReadReferencesInternal();
-		return names;
-	}
+    public string[] GetBranches()
+    {
+        (string[] names, string[] _) = ReadReferencesInternal();
+        return names;
+    }
+
+    /// <summary>
+    /// M8：拿到当前 HEAD 指向的本地分支短名（"master" / "main" / "feature/login"）。
+    /// <para>
+    /// 实现：<c>git rev-parse --abbrev-ref HEAD</c>，detached HEAD 时返回空字符串。
+    /// 不在 biturbo 现有公开 API 中，CLI 路径最稳。
+    /// </para>
+    /// </summary>
+    /// <returns>当前分支短名；detached HEAD（HEAD 指向裸 commit）时返回 ""。</returns>
+    /// <exception cref="GitRepositoryException">git 进程失败。</exception>
+    public string GetCurrentBranch()
+    {
+        EnsureNotDisposed();
+        try
+        {
+            string output = RunGit("current-branch", "rev-parse", "--abbrev-ref", "HEAD");
+            string trimmed = output.Trim();
+            // git 在 detached HEAD 时输出 "HEAD"
+            if (string.IsNullOrEmpty(trimmed) || trimmed == "HEAD")
+            {
+                return "";
+            }
+            return trimmed;
+        }
+        catch (GitRepositoryException ex)
+        {
+            // 新仓库没任何 commit → rev-parse 失败；视作"无当前分支"
+            if (ex.Message.Contains("unknown revision", StringComparison.OrdinalIgnoreCase)
+                || ex.Message.Contains("ambiguous", StringComparison.OrdinalIgnoreCase)
+                || ex.Message.Contains("not a valid object", StringComparison.OrdinalIgnoreCase))
+            {
+                return "";
+            }
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// M8：把 <see cref="GetBranches"/> 返回的扁平 ref 列表 + <see cref="GetCurrentBranch"/>
+    /// 一起组装成 <see cref="BranchTreeNode"/> 树，方便 TreeView 渲染。
+    /// <para>
+    /// 形态（与 WPF 原版侧栏一致）：
+    /// </para>
+    /// <code>
+    ///  本地 (N)
+    ///   ├── master  [current]
+    ///   └── ...
+    ///  远程 (M)
+    ///   ├── origin (K)
+    ///   │    ├── origin/main
+    ///   │    └── ...
+    ///   └── ...
+    /// </code>
+    /// </summary>
+    /// <returns>根级节点列表（通常 = [本地, 远程]）。无任何引用时返回空数组。</returns>
+    public BranchTreeNode[] GetBranchTree()
+    {
+        EnsureNotDisposed();
+        string[] refs = GetBranches();
+        string currentBranch = GetCurrentBranch();
+
+        var localLeaves = new List<BranchTreeNode>();
+        // remoteName -> List<BranchTreeNode>
+        var remoteGroups = new Dictionary<string, List<BranchTreeNode>>(StringComparer.Ordinal);
+
+        foreach (string fullRef in refs)
+        {
+            if (fullRef.StartsWith("refs/heads/", StringComparison.Ordinal))
+            {
+                string name = fullRef.Substring("refs/heads/".Length);
+                bool isCurrent = name == currentBranch;
+                localLeaves.Add(new BranchTreeNode(
+                    name: name,
+                    fullRef: fullRef,
+                    isGroup: false,
+                    kind: BranchKind.Local,
+                    isCurrent: isCurrent,
+                    children: Array.Empty<BranchTreeNode>()));
+            }
+            else if (fullRef.StartsWith("refs/remotes/", StringComparison.Ordinal))
+            {
+                // refs/remotes/<remote>/<branch> → 拆出 remote 名 + 分支名
+                string rest = fullRef.Substring("refs/remotes/".Length);
+                int slash = rest.IndexOf('/');
+                if (slash <= 0) continue; // 防御：不规范 ref
+                string remoteName = rest.Substring(0, slash);
+                string branchName = rest.Substring(slash + 1);
+                // 跳过 HEAD 自身（refs/remotes/origin/HEAD）
+                if (branchName == "HEAD") continue;
+                if (!remoteGroups.TryGetValue(remoteName, out var list))
+                {
+                    list = new List<BranchTreeNode>();
+                    remoteGroups[remoteName] = list;
+                }
+                list.Add(new BranchTreeNode(
+                    name: branchName,
+                    fullRef: fullRef,
+                    isGroup: false,
+                    kind: BranchKind.Remote,
+                    isCurrent: false,
+                    children: Array.Empty<BranchTreeNode>()));
+            }
+            // HEAD / refs/tags/* 跳过：M7 阶段单独有面板
+        }
+
+        // 排序：本地分支按字典序（但 current 排第一，跟 WPF 原版一致）
+        localLeaves.Sort((a, b) =>
+        {
+            if (a.IsCurrent != b.IsCurrent) return a.IsCurrent ? -1 : 1;
+            return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
+        });
+
+        var roots = new List<BranchTreeNode>();
+
+        // 本地组
+        roots.Add(new BranchTreeNode(
+            name: "本地",
+            fullRef: "",
+            isGroup: true,
+            kind: BranchKind.Group,
+            isCurrent: false,
+            children: localLeaves));
+
+        // 远程组（按 remote 名排序）
+        var remoteGroupNames = new List<string>(remoteGroups.Keys);
+        remoteGroupNames.Sort(StringComparer.Ordinal);
+        var remoteChildren = new List<BranchTreeNode>();
+        foreach (string remoteName in remoteGroupNames)
+        {
+            var leaves = remoteGroups[remoteName];
+            // 组内按字典序
+            leaves.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+            remoteChildren.Add(new BranchTreeNode(
+                name: remoteName,
+                fullRef: "",
+                isGroup: true,
+                kind: BranchKind.Group,
+                isCurrent: false,
+                children: leaves));
+        }
+        if (remoteChildren.Count > 0)
+        {
+            roots.Add(new BranchTreeNode(
+                name: "远程",
+                fullRef: "",
+                isGroup: true,
+                kind: BranchKind.Group,
+                isCurrent: false,
+                children: remoteChildren));
+        }
+
+        return roots.ToArray();
+    }
 
 	/// <summary>
 	/// 列出指定引用（refs/heads/main 等）的最新 <paramref name="maxCount"/> 条提交。

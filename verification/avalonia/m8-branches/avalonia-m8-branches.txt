@@ -1,0 +1,15 @@
+Avalonia M8 branches 截屏
+数据流断言：
+  当前分支 = main
+  本地分支 (3): main (current), develop, feature/login
+  远程/origin (2): origin/main, origin/feature/login
+可视化徽章颜色断言：
+  LocalBrush  = #ff4a90e2 (4A90E2, 蓝色)
+  RemoteBrush = #ff7b68a6 (7B68A6, 紫色)
+  找到 5 个非空徽章颜色
+操作语义断言：
+  加载远程分支 origin/feature/login → 4 个 commit
+  detached HEAD → GetCurrentBranch() == ""
+  空仓库 → GetBranchTree() 返回 [本地(空)]
+源仓库：/tmp/forkplus_m8_visual_repo_c6bd804c62724b4eabd80dfba0a5c9e1
+截图仓库：/tmp/forkplus_m8_visual_repo_3a60aeecfd99447c86720f8cce3076f9

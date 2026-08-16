@@ -11,4 +11,4 @@ Converter 预期颜色：
   Modified  = #ffe0a060
   Added     = #ff3fa34d
   Untracked = Gray
-源仓库：/tmp/forkplus_m4_visual_repo_8e97095d11284c4ab8ea723af285449f
+源仓库：/tmp/forkplus_m4_visual_repo_3c9bf08a125641d3a3b7e0acbaa919d8

@@ -11,7 +11,7 @@
   -->
   <Grid ColumnDefinitions="260,4,*" RowDefinitions="*,Auto">
 
-    <!-- 左侧：仓库/分支 (M1) + 文件树 (M5) + 工作区 (M4) + 服务说明 -->
+    <!-- 左侧：仓库 (M1) + 分支树 (M8) + 文件树 (M5) + 工作区 (M4) + 服务说明 -->
     <Border Grid.Column="0" Grid.Row="0" Background="#1e1e1e" Padding="12">
       <DockPanel>
         <ScrollViewer DockPanel.Dock="Top" HorizontalScrollBarVisibility="Disabled">
@@ -32,12 +32,12 @@
                 <TextBlock FontWeight="Bold">仓库（M1）</TextBlock>
                 <DockPanel>
                   <Button x:Name="OpenRepoButton" DockPanel.Dock="Right" Margin="6,0,0,0" Content="打开"/>
-                  <TextBox x:Name="RepoPathBox" Watermark="仓库路径，例如 /path/to/repo"/>
+                  <TextBox x:Name="RepoPathBox" PlaceholderText="仓库路径，例如 /path/to/repo"/>
                 </DockPanel>
-                <TextBlock FontSize="11" Opacity="0.7">本地 / 远程分支：</TextBlock>
-                <ListBox x:Name="BranchesList" Height="140"/>
               </StackPanel>
             </Border>
+            <!-- M8：分支树（已抽到 BranchesPanel.xaml；M1 阶段的内联 ListBox 已被替换） -->
+            <panels:BranchesPanel x:Name="BranchesPanel"/>
             <!-- M5：文件树（已抽到 FileTreePanel.xaml） -->
             <panels:FileTreePanel x:Name="FileTreePanel"/>
             <!-- M6：贮藏（已抽到 StashPanel.xaml） -->

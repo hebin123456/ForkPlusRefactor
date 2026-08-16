@@ -30,6 +30,7 @@ namespace ForkPlus.Avalonia;
 ///   <item>M5 文件树 + 文件预览：<see cref="FileTreePanel"/> 面板（已抽出到 Panels/FileTreePanel.xaml）</item>
 ///   <item>M6 贮藏 (stash) 列表 + apply/pop/drop：<see cref="StashPanel"/> 面板（已抽出到 Panels/StashPanel.xaml）</item>
 ///   <item>M7 标签 (tag) 列表 + 查看 commit / 删除：<see cref="TagsPanel"/> 面板（已抽出到 Panels/TagsPanel.xaml）</item>
+///   <item>M8 分支树 (本地/远程) + 当前 HEAD 标记：<see cref="BranchesPanel"/> 面板（已抽出到 Panels/BranchesPanel.xaml）</item>
 /// </list>
 /// </summary>
 public partial class MainWindow : Window
@@ -41,7 +42,6 @@ public partial class MainWindow : Window
     private TextBlock? _servicesText;
     private TextBlock? _statusText;
     private TextBox? _repoPathBox;
-    private ListBox? _branchesList;
     // M2+M3 面板（内部已含 ListBox + Button + 描述）
     private CommitDiffPanel? _commitDiffPanel;
     // M4 面板（内部已含 ListBox/Button/TextBlock）
@@ -55,6 +55,8 @@ public partial class MainWindow : Window
     private StashPanel? _stashPanel;
     // M7 面板（内部已含 ListBox + View/Delete 按钮）
     private TagsPanel? _tagsPanel;
+    // M8 面板（内部已含 TreeView + Refresh 按钮）
+    private BranchesPanel? _branchesPanel;
 
     public MainWindow()
     {
@@ -63,7 +65,6 @@ public partial class MainWindow : Window
         _servicesText = this.FindControl<TextBlock>("ServicesText");
         _statusText = this.FindControl<TextBlock>("StatusText");
         _repoPathBox = this.FindControl<TextBox>("RepoPathBox");
-        _branchesList = this.FindControl<ListBox>("BranchesList");
         // M2+M3 面板
         _commitDiffPanel = this.FindControl<CommitDiffPanel>("CommitDiffPanel");
         if (_commitDiffPanel != null)
@@ -120,8 +121,25 @@ public partial class MainWindow : Window
                 if (_statusText != null) _statusText.Text = hint;
             };
         }
+        // M8 面板
+        _branchesPanel = this.FindControl<BranchesPanel>("BranchesPanel");
+        if (_branchesPanel != null)
+        {
+            _branchesPanel.BranchActivated += OnBranchActivated;
+            _branchesPanel.SelectionChangedHint += (_, hint) =>
+            {
+                if (_statusText != null) _statusText.Text = hint;
+            };
+        }
         // M1+M2 操作处理器：装配好之后才能订阅分支变化
-        _repoOps = new RepoOpHandler(_branchesList, _commitDiffPanel, _workingTreePanel, _statusText, _fileTreePanel, _stashPanel, _tagsPanel);
+        _repoOps = new RepoOpHandler(
+            branchesPanel: _branchesPanel,
+            commitDiffPanel: _commitDiffPanel,
+            workingTreePanel: _workingTreePanel,
+            statusText: _statusText,
+            fileTreePanel: _fileTreePanel,
+            stashPanel: _stashPanel,
+            tagsPanel: _tagsPanel);
 
         var ac = ServiceLocator.AppContext;
         if (_servicesText != null)
@@ -149,13 +167,12 @@ public partial class MainWindow : Window
         if (this.FindControl<Button>("OpenRepoButton") is { } openBtn)
             openBtn.Click += OnOpenRepoClicked;
 
-        if (_branchesList != null)
-            _branchesList.SelectionChanged += OnBranchSelectionChanged;
-
         // M2+M3：CommitDiffPanel 内部已 self-wire 自己的 ListBox/Button 事件，
         // MainWindow 只通过 DiffRequested 事件接收"用户要看 diff"的意图。
         // M4：WorkingTreePanel 内部已 self-wire 自己的 ListBox/Button 事件，
         // MainWindow 只通过 DiffRequested 事件接收"用户要看 diff"的意图。
+        // M8：BranchesPanel 内部已 self-wire 自己的 TreeView 事件，
+        // MainWindow 只通过 BranchActivated 事件接收"用户要看某分支提交"的意图。
     }
 
     public void InitializeComponent()
@@ -241,15 +258,19 @@ public void Reset()
     }
 
     /// <summary>
-    /// M2：分支被选中后，通过 biturbo 列该分支最新 50 条提交，喂给 <see cref="CommitDiffPanel"/>。
+    /// M2：分支被激活（双击 TreeView 节点）后，通过 biturbo 列该分支最新 50 条提交，喂给 <see cref="CommitDiffPanel"/>。
     /// 已委托给 <see cref="RepoOpHandler.SelectBranch"/>。
     /// </summary>
-    private void OnBranchSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnBranchActivated(object? sender, BranchTreeNode node)
     {
-        if (_branchesList?.SelectedItem is string selected)
+        if (node.IsGroup)
         {
-            _repoOps?.SelectBranch(selected);
+            if (_statusText != null) _statusText.Text = $"{node.Name}（组节点，{node.Children.Count} 个子项）。";
+            return;
         }
+        // 远程分支：传 refs/remotes/<remote>/<branch> 给 SelectBranch；
+        // biturbo 会通过 bt_get_references 解析（refs/remotes 也在 skip_tags=false 时被返回）。
+        _repoOps?.SelectBranch(node.FullRef);
     }
 
     /// <summary>

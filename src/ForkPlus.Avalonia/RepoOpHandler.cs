@@ -7,22 +7,24 @@ using ForkPlus.Avalonia.Panels;
 namespace ForkPlus.Avalonia;
 
 /// <summary>
-/// M1 + M2 + M5 + M6 + M7 仓库/分支/提交/文件树/贮藏/标签加载操作处理器：把"打开 GitRepository → 拉分支 → 选分支拉提交
-/// → 拉文件树 → 拉 stash → 拉 tag"这一串跨 vertical slice 的协调逻辑从 <see cref="MainWindow"/> 抽出来。
+/// M1 + M2 + M5 + M6 + M7 + M8 仓库/分支/提交/文件树/贮藏/标签/分支树加载操作处理器：
+/// 把"打开 GitRepository → 拉分支树 → 选分支拉提交 → 拉文件树 → 拉 stash → 拉 tag"
+/// 这一串跨 vertical slice 的协调逻辑从 <see cref="MainWindow"/> 抽出来。
 ///
 /// <para>
 /// 之前 <see cref="MainWindow"/> 把 M1（仓库+分支）和 M2（提交列表）逻辑都内联在自己身上，
 /// 加上 M3 / M4 / M5 之后越来越臃肿。本类只关心"仓库操作"：
 /// </para>
 /// <list type="bullet">
-///   <item>M1：<see cref="Open"/> 给路径 → 创建 <see cref="GitRepository"/> → 拉 <c>GetBranches()</c> →
-///         把分支列表喂给传入的 branchesList；同时清空 commit 列表（开新仓库） + 刷工作区（M4） + 刷文件树（M5）
+///   <item>M1：<see cref="Open"/> 给路径 → 创建 <see cref="GitRepository"/> → 拉分支树（M8） →
+///         把分支树喂给传入的 branchesPanel；同时清空 commit 列表（开新仓库） + 刷工作区（M4） + 刷文件树（M5）
 ///         + 刷贮藏列表（M6） + 刷标签列表（M7）</item>
 ///   <item>M2：<see cref="SelectBranch"/> 给分支名 → <c>GetCommits(branch, 50)</c> →
 ///         把提交列表喂给传入的 <see cref="CommitDiffPanel"/></item>
 ///   <item>M5：开新仓库时同步刷一次文件树（HEAD）</item>
 ///   <item>M6：开新仓库时同步刷一次贮藏列表（不依赖分支）</item>
 ///   <item>M7：开新仓库时同步刷一次标签列表（不依赖分支）</item>
+///   <item>M8：开新仓库时同步刷一次分支树（本地 + 远程分组）</item>
 /// </list>
 ///
 /// <para>
@@ -32,7 +34,7 @@ namespace ForkPlus.Avalonia;
 /// </summary>
 public class RepoOpHandler
 {
-    private readonly ListBox? _branchesList;
+    private readonly BranchesPanel? _branchesPanel;
     private readonly CommitDiffPanel? _commitDiffPanel;
     private readonly WorkingTreePanel? _workingTreePanel;
     private readonly TextBlock? _statusText;
@@ -40,11 +42,11 @@ public class RepoOpHandler
     private readonly StashPanel? _stashPanel;
     private readonly TagsPanel? _tagsPanel;
 
-    /// <summary>当前打开的仓库。M3 / M4 / M5 / M6 / M7 在需要拿 diff / content 时读这个字段。</summary>
+    /// <summary>当前打开的仓库。M3 / M4 / M5 / M6 / M7 / M8 在需要拿 diff / content 时读这个字段。</summary>
     public GitRepository? CurrentRepo { get; private set; }
 
     public RepoOpHandler(
-        ListBox? branchesList,
+        BranchesPanel? branchesPanel,
         CommitDiffPanel? commitDiffPanel,
         WorkingTreePanel? workingTreePanel,
         TextBlock? statusText,
@@ -52,7 +54,7 @@ public class RepoOpHandler
         StashPanel? stashPanel = null,
         TagsPanel? tagsPanel = null)
     {
-        _branchesList = branchesList;
+        _branchesPanel = branchesPanel;
         _commitDiffPanel = commitDiffPanel;
         _workingTreePanel = workingTreePanel;
         _statusText = statusText;
@@ -76,14 +78,23 @@ public class RepoOpHandler
         {
             CurrentRepo?.Dispose();
             CurrentRepo = new GitRepository(path);
-            string[] branches = CurrentRepo.GetBranches();
-            if (_branchesList != null) _branchesList.ItemsSource = branches;
+            // M8：先刷分支树（这是"开仓库后立刻要看"的内容，比 M2 commit 列表更常用）
+            _branchesPanel?.Load(CurrentRepo);
             // M2：开新仓库时清空提交列表
             _commitDiffPanel?.LoadCommits(Array.Empty<GitCommit>());
-            int local = branches.Count(b => b.StartsWith("refs/heads/"));
+            // 兼容状态栏：原来会报"共 X 个引用 / Y 个本地分支"
+            int localBranches = 0;
+            int remoteBranches = 0;
+            try
+            {
+                string[] allRefs = CurrentRepo.GetBranches();
+                localBranches = allRefs.Count(r => r.StartsWith("refs/heads/", StringComparison.Ordinal));
+                remoteBranches = allRefs.Count(r => r.StartsWith("refs/remotes/", StringComparison.Ordinal) && !r.EndsWith("/HEAD", StringComparison.Ordinal));
+            }
+            catch { /* 状态栏只是辅助，挂了不影响主流程 */ }
             if (_statusText != null)
             {
-                _statusText.Text = $"已打开 {path}：共 {branches.Length} 个引用，其中本地分支 {local} 个。点击分支以加载提交（M2）。";
+                _statusText.Text = $"已打开 {path}：共 {localBranches} 个本地 + {remoteBranches} 个远程分支。点分支以加载提交（M2）。";
             }
             // M4：同步刷一次工作区改动
             _workingTreePanel?.Load(CurrentRepo);

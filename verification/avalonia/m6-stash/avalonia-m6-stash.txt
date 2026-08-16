@@ -1,11 +1,11 @@
 Avalonia M6 stash 截屏（3 条 stash）
 数据流断言：
   初始 3 条 stash（已通过 Apply/Pop/Drop 全部清掉）
-  截图用 3 条 stash（另一个仓库 /tmp/forkplus_m6_visual_repo_1f271923e6eb499a91a8dc21b2c72fbd）
+  截图用 3 条 stash（另一个仓库 /tmp/forkplus_m6_visual_repo_b53a7b8cee4044cfadefe0437fd3ae56）
   测试用 3 条:
-    stash@{0}  c128d00  main: wip: util.cs 第一次改
-    stash@{1}  4f69d08  main: wip: main.cs 也改了
-    stash@{2}  d6eeea2  main: wip: README 改了
+    stash@{0}  27962d9  main: wip: util.cs 第一次改
+    stash@{1}  eaaff0a  main: wip: main.cs 也改了
+    stash@{2}  84862f3  main: wip: README 改了
 可视化徽章颜色断言：
   StashBadge = #ff3a5f8a (3A5F8A)
   找到 3 个徽章颜色，全部 == 期望色（容差 ±2）
@@ -14,5 +14,5 @@ Avalonia M6 stash 截屏（3 条 stash）
   Pop  stash@{0}  → util.cs  被改 = '// M6 changed util\n', stash 栈从 3 变 2
   Drop stash@{0}  → working tree 不变, stash 栈从 2 变 1
   GetStashDiff(stash@{0}) 与 git stash show -p 原文行数一致：+1/-1 vs git +1/-1
-源仓库：/tmp/forkplus_m6_visual_repo_b54db192d3434ea1b4d1ad0ef6c09736
-截图仓库：/tmp/forkplus_m6_visual_repo_1f271923e6eb499a91a8dc21b2c72fbd
+源仓库：/tmp/forkplus_m6_visual_repo_781becc05c7c4e6baaa3f3162240adc3
+截图仓库：/tmp/forkplus_m6_visual_repo_b53a7b8cee4044cfadefe0437fd3ae56
