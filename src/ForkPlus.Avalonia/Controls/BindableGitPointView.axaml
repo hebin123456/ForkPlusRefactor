@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="clr-namespace:ForkPlus.Avalonia.Controls"
+             x:Class="ForkPlus.Avalonia.Controls.BindableGitPointView"
+             x:DataType="ctrl:BindableGitPointView">
+  <StackPanel Orientation="Vertical">
+    <TextBlock Text="{Binding Subject}" FontSize="13" TextTrimming="CharacterEllipsis"/>
+    <TextBlock Text="{Binding Detail}" FontSize="12" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
+  </StackPanel>
+</UserControl>
+

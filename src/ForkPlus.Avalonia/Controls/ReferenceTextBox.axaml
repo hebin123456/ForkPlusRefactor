@@ -1,0 +1,5 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ForkPlus.Avalonia.Controls.ReferenceTextBox">
+  <TextBox x:Name="InnerTextBox" Padding="4,2"/>
+</UserControl>
