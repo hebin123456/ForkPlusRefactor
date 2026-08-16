@@ -1,10 +1,12 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:prefs="clr-namespace:ForkPlus.Avalonia.Dialogs"
+        xmlns:dialogs="clr-namespace:ForkPlus.Avalonia.Dialogs"
+        xmlns:ctrl="clr-namespace:ForkPlus.Avalonia.Controls"
         x:Class="ForkPlus.Avalonia.Dialogs.AddCustomRefspecWindow"
-        x:DataType="prefs:AddCustomRefspecViewModel"
+        x:DataType="dialogs:AddCustomRefspecViewModel"
         Width="500" SizeToContent="Height"
-        Title="Add Custom Refspec">
+        Title="{Binding DialogTitle}"
+        WindowStartupLocation="CenterOwner">
   <Grid Margin="10">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="80"/>
@@ -21,19 +23,17 @@
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
-      <TextBlock Grid.Column="0" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right"
-                 x:Name="RemoteNameTextBlock" Text="{Binding RemoteName}"/>
-      <TextBox Grid.Column="1" Margin="8,4,0,4" Padding="4,2"
-               PlaceholderText="Remote Branch Name"
-               x:Name="BranchNameTextBox"
-               Text="{Binding BranchName}"/>
+      <TextBlock Grid.Column="0" FontSize="13" VerticalAlignment="Center"
+                 HorizontalAlignment="Right" Text="{Binding RemoteName}"/>
+      <ctrl:ReferenceTextBox Grid.Column="1" Margin="8,4,0,4" Padding="4,2,4,2"
+                             Text="{Binding BranchName, Mode=TwoWay}"
+                             Placeholder="{Binding BranchNamePlaceholder}"/>
     </Grid>
 
-    <!-- 底部按钮（替代 ForkPlusDialogWindow 的 Footer） -->
     <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
                 Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
       <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="OnCancel"/>
-      <Button Content="OK" Width="80" Classes="accent" Click="OnOk"/>
+      <Button Content="{Binding SubmitButtonTitle}" Width="80" Classes="accent" Click="OnOk"/>
     </StackPanel>
   </Grid>
 </Window>

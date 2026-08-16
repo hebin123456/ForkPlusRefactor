@@ -4,11 +4,11 @@ using Avalonia.Markup.Xaml;
 
 namespace ForkPlus.Avalonia.Dialogs;
 
-public partial class AddGitIgnorePatternWindow : Window
+public partial class CheckoutBranchWindow : Window
 {
-    public AddGitIgnorePatternViewModel ViewModel { get; } = new();
+    public CheckoutBranchViewModel ViewModel { get; } = new();
 
-    public AddGitIgnorePatternWindow()
+    public CheckoutBranchWindow()
     {
         DataContext = ViewModel;
         InitializeComponent();
@@ -16,7 +16,8 @@ public partial class AddGitIgnorePatternWindow : Window
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 
-    public string? GetResult() => ViewModel.IsValid ? ViewModel.Pattern : null;
+    public (string SwitchTo, LeanBranchingLocalChanges Option) GetResult() =>
+        (ViewModel.SwitchToText, ViewModel.LocalChangesOption);
 
     private void OnCancel(object? sender, RoutedEventArgs e) => Close(null);
     private void OnOk(object? sender, RoutedEventArgs e) => Close(GetResult());

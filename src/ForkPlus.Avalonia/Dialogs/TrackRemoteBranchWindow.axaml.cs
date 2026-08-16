@@ -16,10 +16,10 @@ public partial class TrackRemoteBranchWindow : Window
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 
-    public (string LocalBranchName, CreateBranchViewModel.LocalChangesOption LocalChanges)? GetResult() =>
-        string.IsNullOrWhiteSpace(ViewModel.LocalBranchName)
-            ? null
-            : (ViewModel.LocalBranchName, ViewModel.LocalChanges);
+    public (string LocalBranchName, LeanBranchingLocalChanges Option)? GetResult() =>
+        ViewModel.IsValid
+            ? (ViewModel.LocalBranchName, ViewModel.LocalChangesOption)
+            : null;
 
     private void OnCancel(object? sender, RoutedEventArgs e) => Close(null);
     private void OnOk(object? sender, RoutedEventArgs e) => Close(GetResult());

@@ -1,36 +1,16 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-
 namespace ForkPlus.Avalonia.Dialogs;
 
-/// <summary>M9-J：从 WPF <c>AddCustomRefspecWindow.xaml</c> 机械转。</summary>
-public sealed class AddCustomRefspecViewModel : INotifyPropertyChanged
+public sealed class AddCustomRefspecViewModel
 {
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public string DialogTitle { get; set; } = "Add Custom Refspec";
+    public string DialogDescription { get; set; } = "Add a custom refspec to the current remote";
+    public string SubmitButtonTitle { get; set; } = "Add";
 
-    public AddCustomRefspecViewModel()
-    {
-        RemoteName = "origin";
-        BranchName = "";
-    }
+    public string RemoteName { get; set; } = string.Empty;
+    public string BranchNameLabel { get; set; } = string.Empty;
+    public string BranchNamePlaceholder { get; set; } = "Remote Branch Name";
 
-    private string _remoteName = "";
-    public string RemoteName
-    {
-        get => _remoteName;
-        set { if (_remoteName != value) { _remoteName = value; OnPropertyChanged(); } }
-    }
+    public string BranchName { get; set; } = string.Empty;
 
-    private string _branchName = "";
-    public string BranchName
-    {
-        get => _branchName;
-        set { if (_branchName != value) { _branchName = value; OnPropertyChanged(); } }
-    }
-
-    /// <summary>完整 refspec，例如 "refs/heads/feature/x"</summary>
-    public string FullRef => $"refs/remotes/{RemoteName}/{BranchName}";
-
-    private void OnPropertyChanged([CallerMemberName] string? n = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+    public bool IsValid => !string.IsNullOrWhiteSpace(BranchName);
 }
