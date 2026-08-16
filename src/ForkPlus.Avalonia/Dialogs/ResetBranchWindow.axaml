@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dialogs="clr-namespace:ForkPlus.Avalonia.Dialogs"
+        xmlns:ctrl="clr-namespace:ForkPlus.Avalonia.Controls"
+        x:Class="ForkPlus.Avalonia.Dialogs.ResetBranchWindow"
+        x:DataType="dialogs:ResetBranchViewModel"
+        Width="590" SizeToContent="Height"
+        Title="Reset Branch"
+        WindowStartupLocation="CenterOwner">
+  <Grid Margin="10">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="80"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="1" Grid.Column="1" Margin="0,10,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+      <TextBlock Grid.Row="0" Grid.Column="0" Text="Branch:" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+      <ctrl:GitPointView Grid.Row="0" Grid.Column="1" Margin="8,4,0,4" Height="20"/>
+      <TextBlock Grid.Row="1" Grid.Column="0" Text="Move to:" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+      <ctrl:GitPointView Grid.Row="1" Grid.Column="1" Margin="8,4,0,4" Height="20"/>
+      <TextBlock Grid.Row="2" Grid.Column="0" Text="Reset type:" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+      <ComboBox Grid.Row="2" Grid.Column="1" Margin="8,4,0,4" Width="420" x:Name="ResetTypeComboBox"
+                SelectedItem="{Binding ResetType, Mode=TwoWay}">
+        <ComboBoxItem>
+          <DockPanel Width="420">
+            <Ellipse DockPanel.Dock="Left" Width="12" Height="12" Fill="#FF34C84A" Margin="0,0,4,0"/>
+            <TextBlock DockPanel.Dock="Left" Text="Soft" Width="70"/>
+            <TextBlock Text="Keep all changes. Stage differences" VerticalAlignment="Center" FontSize="13"/>
+          </DockPanel>
+        </ComboBoxItem>
+        <ComboBoxItem>
+          <DockPanel Width="420">
+            <Ellipse DockPanel.Dock="Left" Width="12" Height="12" Fill="#FFFDBE41" Margin="0,0,4,0"/>
+            <TextBlock DockPanel.Dock="Left" Text="Mixed" Width="70"/>
+            <TextBlock Text="Keep all changes. Unstage differences" VerticalAlignment="Center" FontSize="13"/>
+          </DockPanel>
+        </ComboBoxItem>
+        <ComboBoxItem>
+          <DockPanel Width="420">
+            <Ellipse DockPanel.Dock="Left" Width="12" Height="12" Fill="#FFFA4B49" Margin="0,0,4,0"/>
+            <TextBlock DockPanel.Dock="Left" Text="Hard" Width="70"/>
+            <TextBlock Text="Discard all local changes" VerticalAlignment="Center" FontSize="13"/>
+          </DockPanel>
+        </ComboBoxItem>
+      </ComboBox>
+    </Grid>
+
+    <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="OnCancel"/>
+      <Button Content="OK" Width="80" Classes="accent" Click="OnOk"/>
+    </StackPanel>
+  </Grid>
+</Window>
