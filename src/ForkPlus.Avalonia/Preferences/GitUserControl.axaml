@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prefs="clr-namespace:ForkPlus.Avalonia.Preferences"
+             x:Class="ForkPlus.Avalonia.Preferences.GitUserControl"
+             x:DataType="prefs:GitPreferencesViewModel"
+             Width="500">
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="prefs:GitInstanceViewModel">
+      <TextBlock FontSize="13" VerticalAlignment="Center" Text="{Binding DisplayName}"/>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="HeaderBrush" Color="#2D2D30"/>
+    <SolidColorBrush x:Key="AvatarBrush" Color="#3A5F8A"/>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- 0: Git Instance 行 -->
+    <TextBlock Grid.Row="0" Grid.Column="1" Margin="0,4,0,0" FontSize="13"
+               VerticalAlignment="Center" HorizontalAlignment="Right" Text="Git Instance:"/>
+    <ComboBox Grid.Row="0" Grid.Column="2" Margin="8,8,0,4"
+              x:Name="GitInstanceComboBox"
+              ItemsSource="{Binding GitInstances}"
+              SelectedItem="{Binding SelectedGitInstance}"
+              HorizontalAlignment="Stretch"/>
+
+    <!-- 1: Verbose Git output -->
+    <CheckBox Grid.Row="1" Grid.Column="2" Margin="10,4,0,0"
+              x:Name="VerboseGitOutputCheckBox"
+              IsChecked="{Binding VerboseGitOutput}"
+              Content="Enable verbose Git output" HorizontalAlignment="Left"/>
+
+    <!-- 2: git-mm Instance 行 -->
+    <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" FontSize="13"
+               VerticalAlignment="Center" HorizontalAlignment="Right" Text="git-mm Instance:"/>
+    <ComboBox Grid.Row="2" Grid.Column="2" Margin="8,8,0,4"
+              x:Name="GitMmInstanceComboBox"
+              ItemsSource="{Binding GitMmInstances}"
+              SelectedItem="{Binding SelectedGitMmInstance}"
+              HorizontalAlignment="Stretch"/>
+
+    <!-- 3: Separator -->
+    <Separator Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,12,0,0"/>
+
+    <!-- 4: Global User Information 标题 -->
+    <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Text="Global User Information"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13"/>
+
+    <!-- 5-6: Avatar + UserName / Email -->
+    <Border Grid.Row="5" Grid.RowSpan="2" Grid.Column="1" Margin="10,0,0,0"
+            Width="42" Height="42" HorizontalAlignment="Right" CornerRadius="21"
+            Background="{StaticResource AvatarBrush}">
+      <TextBlock Text="U" Foreground="White" FontSize="20" FontWeight="Bold"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </Border>
+    <TextBox Grid.Row="5" Grid.Column="2" Margin="10,0,0,4" Padding="4,2"
+             x:Name="UserNameTextBox"
+             PlaceholderText="User name"
+             Text="{Binding UserName}"/>
+    <TextBox Grid.Row="6" Grid.Column="2" Margin="10,4,0,4" Padding="4,2"
+             x:Name="EmailTextBox"
+             PlaceholderText="Email"
+             Text="{Binding Email}"/>
+
+    <!-- 7: gravatar 链接 -->
+    <TextBlock Grid.Row="7" Grid.Column="2" Margin="12,0,10,0" VerticalAlignment="Center">
+      <Run Text="Change the avatar at "/>
+      <Run Text="gravatar.com" FontWeight="Bold" Foreground="#1E6FCC"/>
+    </TextBlock>
+  </Grid>
+</UserControl>

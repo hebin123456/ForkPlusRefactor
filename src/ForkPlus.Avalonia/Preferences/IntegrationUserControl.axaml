@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prefs="clr-namespace:ForkPlus.Avalonia.Preferences"
+             x:Class="ForkPlus.Avalonia.Preferences.IntegrationUserControl"
+             x:DataType="prefs:IntegrationViewModel"
+             Width="650">
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="HeaderBrush" Color="#2D2D30"/>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="160"/>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Issue Tracker Integration -->
+    <TextBlock Grid.Row="0" Grid.Column="0" Text="Issue Tracker Integration"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13" Margin="0,0,0,6"/>
+    <CheckBox Grid.Row="1" Grid.Column="1" Margin="10,4,0,4"
+              x:Name="ShowBugtrackerLinksCheckBox"
+              IsChecked="{Binding HighlightIssueTrackerLinks}"
+              Content="Highlight issue tracker links in commit messages"/>
+
+    <!-- External Merge Tools -->
+    <TextBlock Grid.Row="2" Grid.Column="0" Text="External Merge Tools"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13"/>
+    <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,8"
+            BorderThickness="1" BorderBrush="#888" Padding="6">
+      <ItemsControl ItemsSource="{Binding MergeTools}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="prefs:ExternalTool">
+            <Grid ColumnDefinitions="*,*,Auto" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="{Binding Name}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Path}" Foreground="#888"/>
+              <Button Grid.Column="2" Content="..." Width="24" Height="22"/>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+
+    <!-- External Diff Tools -->
+    <TextBlock Grid.Row="4" Grid.Column="0" Text="External Diff Tools"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13"/>
+    <Border Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,8"
+            BorderThickness="1" BorderBrush="#888" Padding="6">
+      <ItemsControl ItemsSource="{Binding DiffTools}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="prefs:ExternalTool">
+            <Grid ColumnDefinitions="*,*,Auto" Margin="0,2">
+              <TextBlock Grid.Column="0" Text="{Binding Name}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Path}" Foreground="#888"/>
+              <Button Grid.Column="2" Content="..." Width="24" Height="22"/>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+
+    <!-- Shell -->
+    <TextBlock Grid.Row="6" Grid.Column="0" Text="Shell"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13"/>
+
+    <TextBlock Grid.Row="7" Grid.Column="0" Text="Shell:" FontSize="13"
+               VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,0,4"/>
+    <ComboBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,0,0,4"
+              x:Name="ShellToolComboBox"
+              ItemsSource="{x:Static prefs:IntegrationViewModel.ShellTools}"
+              SelectedItem="{Binding ShellTool}"/>
+
+    <TextBlock Grid.Row="8" Grid.Column="0" Text="Shell Path:" FontSize="13"
+               VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <TextBox Grid.Row="8" Grid.Column="1" Margin="10,4,0,4" Padding="4,2"
+             IsReadOnly="True"
+             x:Name="ShellToolPathTextBox"
+             Text="{Binding ShellPath, Mode=OneWay}"/>
+    <Button Grid.Row="8" Grid.Column="2" Content="..." Width="28" Height="22" Margin="2,4,0,4"/>
+
+    <TextBlock Grid.Row="9" Grid.Column="0" Text="Arguments:" FontSize="13"
+               VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <TextBox Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,4,0,4" Padding="4,2"
+             x:Name="ShellToolArgumentsTextBox"
+             Text="{Binding ShellArguments}"/>
+  </Grid>
+</UserControl>

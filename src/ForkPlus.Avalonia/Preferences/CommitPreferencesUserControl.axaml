@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prefs="clr-namespace:ForkPlus.Avalonia.Preferences"
+             x:Class="ForkPlus.Avalonia.Preferences.CommitPreferencesUserControl"
+             x:DataType="prefs:CommitPreferencesViewModel"
+             Width="500">
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="HeaderBrush" Color="#2D2D30"/>
+    <SolidColorBrush x:Key="HintBrush" Color="#888888"/>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="190"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- 0: Commit Message 标题 -->
+    <TextBlock Grid.Row="0" Grid.Column="0" Text="Commit Message"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13"/>
+
+    <!-- 1: Length indicator (Low / High limit) -->
+    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0" HorizontalAlignment="Right"
+               Text="Length indicator:" VerticalAlignment="Bottom"/>
+    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
+      <TextBlock Margin="10,0,0,0" Foreground="{StaticResource HintBrush}" Text="Low limit:"/>
+      <TextBox Width="36" Margin="10,0,0,0" x:Name="CommitSubjectLowLimitTextBox"
+               Text="{Binding CommitSubjectLowLimit, Mode=TwoWay}"/>
+      <TextBlock Margin="10,0,0,0" Foreground="{StaticResource HintBrush}" Text="High limit:"/>
+      <TextBox Width="36" Margin="10,0,0,0" x:Name="CommitSubjectHighLimitTextBox"
+               Text="{Binding CommitSubjectHighLimit, Mode=TwoWay}"/>
+    </StackPanel>
+
+    <!-- 2: Spell checking -->
+    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,8,0,0"
+               VerticalAlignment="Center" HorizontalAlignment="Right" Text="Spell checking:"/>
+    <ComboBox Grid.Row="2" Grid.Column="1" Margin="10,8,0,0" Width="140"
+              HorizontalAlignment="Left" VerticalAlignment="Center"
+              x:Name="CommintSpellCheckingComboBox"
+              ItemsSource="{x:Static prefs:CommitPreferencesViewModel.SpellCheckingOptions}"
+              SelectedItem="{Binding SpellChecking}"/>
+
+    <!-- 3: Page guide at column -->
+    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,8,0,0"
+               VerticalAlignment="Center" HorizontalAlignment="Right" Text="Page guide at column:"/>
+    <TextBox Grid.Row="3" Grid.Column="1" Margin="10,8,0,0" Width="40"
+             HorizontalAlignment="Left"
+             x:Name="PageGuideLinePositionTextBox"
+             Text="{Binding PageGuideColumn, Mode=TwoWay}"/>
+
+    <!-- 4: Commit message regex -->
+    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,8,0,0"
+               VerticalAlignment="Top" HorizontalAlignment="Right" Text="Commit message regex:"/>
+    <TextBox Grid.Row="4" Grid.Column="1" Grid.RowSpan="3" Margin="10,8,0,0"
+             Height="80" AcceptsReturn="True" TextWrapping="Wrap"
+             x:Name="CommitMessageRegexTextBox"
+             Text="{Binding CommitMessageRegex, Mode=TwoWay}"/>
+  </Grid>
+</UserControl>

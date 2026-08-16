@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prefs="clr-namespace:ForkPlus.Avalonia.Preferences"
+             x:Class="ForkPlus.Avalonia.Preferences.RepositorySettingsGeneralUserControl"
+             x:DataType="prefs:RepositorySettingsGeneralViewModel"
+             Width="450">
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="HeaderBrush" Color="#2D2D30"/>
+    <SolidColorBrush x:Key="AvatarBrush" Color="#3A5F8A"/>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- User Information -->
+    <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="User Information"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13"/>
+    <CheckBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,10"
+              x:Name="UseGlobalGitCredentialsCheckBox"
+              IsChecked="{Binding UseGlobalGitCredentials}"
+              Content="Use global git credentials" HorizontalAlignment="Left"/>
+
+    <Border Grid.Row="2" Grid.RowSpan="2" Grid.Column="0" Margin="60,0,10,0"
+            Width="42" Height="42" HorizontalAlignment="Left" CornerRadius="21"
+            Background="{StaticResource AvatarBrush}">
+      <TextBlock Text="R" Foreground="White" FontSize="20" FontWeight="Bold"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </Border>
+    <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4,0,4" Padding="4,2"
+             x:Name="UserNameTextBox" PlaceholderText="User name"
+             Text="{Binding UserName}"/>
+    <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4,0,4" Padding="4,2"
+             x:Name="EmailTextBox" PlaceholderText="Email"
+             Text="{Binding Email}"/>
+
+    <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,0,10,0" VerticalAlignment="Center">
+      <Run Text="Change the avatar at "/>
+      <Run Text="gravatar.com" FontWeight="Bold" Foreground="#1E6FCC"/>
+    </TextBlock>
+
+    <Separator Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,20,0,0"/>
+
+    <!-- Lean Branching -->
+    <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3" Text="Lean Branching"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13"/>
+    <TextBlock Grid.Row="7" Grid.Column="0" Text="Main Branch:" FontSize="13"
+               Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <ComboBox Grid.Row="7" Grid.Column="1" Margin="0,4,0,4"
+              x:Name="MainBranchComboBox"
+              ItemsSource="{Binding MainBranches}"
+              SelectedItem="{Binding SelectedMainBranch}"/>
+    <CheckBox Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,8,0,0"
+              x:Name="NoFastForwardCheckBox"
+              IsChecked="{Binding NoFastForward}"
+              Content="No fast-forward on merge" HorizontalAlignment="Left"/>
+
+    <Separator Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,20,0,0"/>
+
+    <!-- Diff View -->
+    <TextBlock Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="3" Text="Diff View"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13"/>
+    <TextBlock Grid.Row="11" Grid.Column="0" Text="Tab Width:" FontSize="13"
+               Margin="0,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <TextBox Grid.Row="11" Grid.Column="1" Width="40" Margin="0,4,0,4" Padding="4,2"
+             HorizontalAlignment="Left"
+             x:Name="TabWidthTextBox"
+             Text="{Binding TabWidth}"/>
+  </Grid>
+</UserControl>

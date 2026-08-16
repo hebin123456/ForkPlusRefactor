@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prefs="clr-namespace:ForkPlus.Avalonia.Preferences"
+             x:Class="ForkPlus.Avalonia.Preferences.IssueTrackerUserControl"
+             x:DataType="prefs:IssueTrackerViewModel"
+             Width="600" Height="380">
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="prefs:BugTrackerRule">
+      <StackPanel>
+        <TextBlock Margin="4,0,4,0" FontSize="13" Text="{Binding Name}"/>
+        <TextBlock Margin="4,0,4,0" FontSize="11" Foreground="#888" Text="{Binding Level}"/>
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <CheckBox Grid.Row="0" Margin="0,0,0,10" HorizontalAlignment="Left"
+              x:Name="IsEnabledCheckbox"
+              IsChecked="{Binding IsEnabled}"
+              Content="Add hyperlinks to issue numbers in commit messages"/>
+
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="200"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <!-- 左侧规则列表 -->
+      <Grid Grid.Column="0">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="26"/>
+        </Grid.RowDefinitions>
+        <ListBox Grid.Row="0" x:Name="BugTrackerRulesListBox"
+                 ItemsSource="{Binding Rules}"
+                 SelectedItem="{Binding SelectedRule}"
+                 BorderBrush="#888" BorderThickness="1"/>
+        <Border Grid.Row="1" BorderBrush="#888" BorderThickness="1,0,1,1" Background="#F0F0F0">
+          <StackPanel Orientation="Horizontal">
+            <Button x:Name="AddRuleDropDownButton" Width="24" Height="24" Margin="-1,-1,0,-1"
+                    Content="+"/>
+            <Button x:Name="RemoveRuleButton" Width="24" Height="24" Margin="0,-1,0,-1"
+                    Content="−"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+      <!-- 右侧规则编辑 -->
+      <Grid Grid.Column="1" Margin="15,0,0,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" FontSize="13"
+                   Margin="4,4,8,4" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Margin="0,4,0,4" Padding="4,2"
+                 PlaceholderText="Rule name" FontSize="13"
+                 x:Name="NameTextBox" Text="{Binding SelectedRule.Name, Mode=TwoWay}"/>
+
+        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0">
+          <RadioButton Content="Local" x:Name="LocalRadioButton" IsChecked="True"/>
+          <RadioButton Content="Shared" Margin="15,0,0,0" x:Name="SharedRadioButton"/>
+        </StackPanel>
+        <TextBlock Grid.Row="2" Grid.Column="1" Margin="6,4,0,0" FontSize="11" Foreground="#888"
+                   x:Name="RuleLocationTextBlock" Text=".git/config"/>
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Text="Parsing Regular Expression:"
+                   FontSize="13" Margin="4,6,0,0" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,4,0,4" Padding="4,2"
+                 FontSize="13" PlaceholderText="e.g.'(\\d+)'"
+                 x:Name="RegexTextBox" Text="{Binding SelectedRule.Regex, Mode=TwoWay}"/>
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Text="Result Url:"
+                   FontSize="13" Margin="4,4,0,0" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,4,0,2" Padding="4,2"
+                 FontSize="13" PlaceholderText="e.g.'https://github.com/project/issues/$1'"
+                 x:Name="UrlTextBox" Text="{Binding SelectedRule.Url, Mode=TwoWay}"/>
+        <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" FontSize="11" Foreground="#888"
+                   Margin="4,0,0,4" Text="Access regex groups using $1, $2 etc variables"/>
+
+        <TextBlock Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" Text="Test Message:"
+                   FontSize="13" Margin="4,12,0,0" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,4,0,2" Padding="4,2"
+                 FontSize="13" PlaceholderText="Test commit message"
+                 x:Name="SampleMessageTextBox" Text="{Binding SampleMessage, Mode=TwoWay}"/>
+        <TextBlock Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2" FontSize="11" Foreground="#888"
+                   Margin="4,0,0,4" x:Name="SamplePreviewTextBlock"
+                   Text="(匹配预览：#42 → https://github.com/user/repo/issues/42)"/>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

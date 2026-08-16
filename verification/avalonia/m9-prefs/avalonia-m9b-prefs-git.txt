@@ -1,0 +1,13 @@
+Avalonia M9-B Preferences Git 截屏
+（从 WPF ForkPlus/UI/UserControls/Preferences/GitUserControl.xaml 机械转 Avalonia）
+数据流断言：
+  GitInstances = 3（SystemGit / Separator / BundledBiturbo）
+  GitMmInstances = 3（同上结构）
+  SelectedGitInstance = System Git, SelectedGitMmInstance = System git-mm
+  VerboseGitOutput = false / UserName = 'Fork User' / Email = 'user@example.com'
+可视化断言：
+  ComboBox = 2 / CheckBox = 1 / TextBox = 2 / Avatar 占位 Border = 1
+  'Global User Information' 标题 + gravatar 链接行
+操作语义断言：
+  VerboseGitOutput 勾选 → VM 同步 / TextBox 改值 → VM.UserName 同步
+  ComboBox 切到 BundledBiturbo → vm.SelectedGitInstance 同步

@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prefs="clr-namespace:ForkPlus.Avalonia.Preferences"
+             x:Class="ForkPlus.Avalonia.Preferences.AiReviewPreferencesUserControl"
+             x:DataType="prefs:AiReviewPreferencesViewModel"
+             Width="560">
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="HeaderBrush" Color="#2D2D30"/>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="170"/>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0" Grid.Column="0" Text="AI Model Configuration"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13"/>
+
+    <TextBlock Grid.Row="1" Grid.Column="0" Text="Inference service URL:" FontSize="13"
+               Margin="0,8,0,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,8,0,0" Padding="4,2"
+             x:Name="ServiceUrlTextBox" PlaceholderText="https://api.openai.com"
+             Text="{Binding ServiceUrl}"/>
+
+    <TextBlock Grid.Row="2" Grid.Column="0" Text="API Key:" FontSize="13"
+               Margin="0,8,0,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,8,0,0" Padding="4,2"
+             x:Name="ApiKeyTextBox" PlaceholderText="API key"
+             PasswordChar="•"
+             Text="{Binding ApiKey}"/>
+
+    <TextBlock Grid.Row="3" Grid.Column="0" Text="Model:" FontSize="13"
+               Margin="0,8,0,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <ComboBox Grid.Row="3" Grid.Column="1" Margin="10,8,0,0" Height="26"
+              x:Name="ModelComboBox"
+              ItemsSource="{Binding AvailableModels}"
+              SelectedItem="{Binding Model}"/>
+    <Button Grid.Row="3" Grid.Column="2" Margin="6,8,0,0" Width="26" Height="26"
+            x:Name="RefreshModelsButton" Content="↻"/>
+
+    <CheckBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,8,0,0"
+              x:Name="AutoFetchModelsCheckBox"
+              IsChecked="{Binding AutoFetchModels}"
+              Content="Automatically fetch mounted models from URL and API key"/>
+
+    <TextBlock Grid.Row="5" Grid.Column="0" Text="Retry count:" FontSize="13"
+               Margin="0,8,0,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <TextBox Grid.Row="5" Grid.Column="1" Margin="10,8,0,0" Width="48" HorizontalAlignment="Left"
+             x:Name="RetryCountTextBox"
+             Text="{Binding RetryCount}"/>
+
+    <TextBlock Grid.Row="6" Grid.Column="0" Text="Max timeout (seconds):" FontSize="13"
+               Margin="0,8,0,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <TextBox Grid.Row="6" Grid.Column="1" Margin="10,8,0,0" Width="48" HorizontalAlignment="Left"
+             x:Name="TimeoutTextBox"
+             Text="{Binding Timeout}"/>
+
+    <DockPanel Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,8,0,0">
+      <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#888"
+                 x:Name="StatusTextBlock" Text="{Binding StatusText}"/>
+    </DockPanel>
+
+    <TextBlock Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="3" Text="Skills"
+               Foreground="{StaticResource HeaderBrush}" FontWeight="Bold" FontSize="13" Margin="0,12,0,0"/>
+
+    <TextBlock Grid.Row="9" Grid.Column="0" Text="Skill name:" FontSize="13"
+               Margin="0,8,0,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <TextBox Grid.Row="9" Grid.Column="1" Margin="10,8,0,0" Padding="4,2"
+             x:Name="SkillNameTextBox"/>
+    <Button Grid.Row="9" Grid.Column="2" Margin="6,8,0,0" Padding="8,4"
+            x:Name="AddCustomSkillButton" Content="Add Skill"/>
+
+    <TextBlock Grid.Row="10" Grid.Column="0" Text="Content:" FontSize="13"
+               Margin="0,8,0,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+    <Border Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" Height="100" Margin="10,4,0,0"
+            BorderBrush="#888" BorderThickness="1" CornerRadius="2">
+      <TextBox AcceptsReturn="True" TextWrapping="Wrap" BorderThickness="0" Background="Transparent"/>
+    </Border>
+
+    <TextBlock Grid.Row="11" Grid.Column="0" Text="Import:" FontSize="13"
+               Margin="0,8,0,0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+    <StackPanel Grid.Row="11" Grid.Column="1" Margin="10,8,0,0" Orientation="Horizontal">
+      <Button Padding="8,4" x:Name="LoadSkillButton" Content="Load Skill File..."/>
+      <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="#888" Margin="8,0,0,0"
+                 x:Name="CtrlEnterHintTextBlock" Text="Ctrl+Enter to add"/>
+    </StackPanel>
+
+    <TextBlock Grid.Row="12" Grid.Column="0" Text="Loaded skills:" FontSize="13"
+               Margin="0,8,0,0" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+    <ListBox Grid.Row="12" Grid.Column="1" Grid.ColumnSpan="2" Margin="10,4,0,0" Height="120"
+             BorderThickness="1" BorderBrush="#888"
+             x:Name="SkillListBox"
+             ItemsSource="{Binding Skills}"/>
+  </Grid>
+</UserControl>

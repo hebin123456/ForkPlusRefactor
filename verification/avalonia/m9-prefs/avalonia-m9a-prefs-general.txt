@@ -1,0 +1,19 @@
+Avalonia M9-A Preferences General 截屏
+（从 WPF ForkPlus/UI/UserControls/Preferences/GeneralUserControl.xaml 机械转 Avalonia）
+数据流断言：
+  源目录 = 3（mock：C:\Projects, D:\GitHub, E:\Repos\work）
+  ShowDiffChangeMarks = true / FontSize = 13.0 / DisableSyntaxHighlighting = false
+  RevisionSortOrder = Topo / Fetch remotes = true / Fetch tags = false
+  UpdateRepoStatus = true / UpdateSubmodules = true / Push auto = false
+  Compact = false / Undo/Redo = false / Space = '-' / Language = en-US
+可视化断言：
+  CheckBox 数 ≥ 10（实际 9）
+  RadioButton 数 = 2（Topo/Date，互斥）
+  ComboBox 数 = 2（SpaceCharacter + Language）
+  ListBox 源目录 = 3 项 / 选中第 0 项
+  DiffView 占位 Border 显示 unified diff 文本
+操作语义断言：
+  ShowDiffChangeMarks 切换 → VM 字段同步
+  RadioButton Date 选中 → RevisionSortOrder = Date / Topo 互斥取消
+  FontSize=5 → clamp 到 10；FontSize=100 → clamp 到 40
+  LanguageComboBox 选 zh-CN → vm.Language = 'zh-CN'
