@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:git="using:ForkPlus.Avalonia.Git"
+             x:Class="ForkPlus.Avalonia.Panels.StashPanel">
+  <Border Background="#252526" CornerRadius="6" Padding="8">
+    <StackPanel Spacing="6">
+      <TextBlock FontWeight="Bold">贮藏（M6）</TextBlock>
+      <TextBlock x:Name="StashSummaryText" FontSize="11" Opacity="0.7"
+                 Text="开仓库后这里会列出 git stash list，按 stash@{0} 最新在前。" TextWrapping="Wrap"/>
+      <ListBox x:Name="StashList" Height="180">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="git:GitStash">
+            <Grid ColumnDefinitions="80,*" Margin="0,1">
+              <Border Grid.Column="0" Padding="4,1" Margin="0,0,6,0" CornerRadius="3"
+                      Background="#3A5F8A">
+                <TextBlock Text="{Binding ReflogSelector}" FontSize="10" FontWeight="Bold"
+                           Foreground="White" HorizontalAlignment="Center" FontFamily="monospace"/>
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="{Binding DisplayLine}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                <TextBlock FontSize="10" Opacity="0.6" FontFamily="monospace">
+                  <Run Text="sha="/><Run Text="{Binding Sha}"/>
+                </TextBlock>
+              </StackPanel>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+          <Button x:Name="ApplyStashButton" Content="应用 (apply)"/>
+          <Button x:Name="PopStashButton" Content="弹出 (pop)"/>
+        </StackPanel>
+        <TextBlock Text="选中一条 stash 后点 apply / pop；drop 在选中后用按钮（防误删）。"
+                   FontSize="11" Opacity="0.7" TextWrapping="Wrap" VerticalAlignment="Center"/>
+      </DockPanel>
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+          <Button x:Name="DropStashButton" Content="丢弃 (drop)"/>
+          <Button x:Name="ViewStashDiffButton" Content="查看 diff"/>
+        </StackPanel>
+        <TextBlock Text="drop 会从 stash 栈中删除该条目，不可恢复。"
+                   FontSize="11" Opacity="0.7" TextWrapping="Wrap" VerticalAlignment="Center"/>
+      </DockPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

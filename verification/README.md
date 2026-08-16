@@ -28,10 +28,20 @@ verification/
     │   ├── avalonia-m3-diff.png
     │   ├── avalonia-m3-diff.txt
     │   └── 进度-M3.md         ← M3 设计取舍 / 视觉断言细节
-    └── m4-working-tree/       ← M4：工作区改动（相对 HEAD）
-        ├── avalonia-m4-working-tree.png
-        ├── avalonia-m4-working-tree.txt
-        └── 进度-M4.md         ← M4 设计取舍 / 视觉断言细节
+    ├── m4-working-tree/       ← M4：工作区改动（相对 HEAD）
+    │   ├── avalonia-m4-working-tree.png
+    │   ├── avalonia-m4-working-tree.txt
+    │   └── 进度-M4.md         ← M4 设计取舍 / 视觉断言细节
+    ├── m5-file-tree/          ← M5：文件树 + 文件内容预览
+    │   ├── avalonia-m5-file-tree.png
+    │   ├── avalonia-m5-file-tree-mainwindow.png
+    │   ├── avalonia-m5-file-tree.txt
+    │   └── 进度-M5.md         ← M5 设计取舍 / 视觉断言细节
+    └── m6-stash/              ← M6：贮藏 (stash) 列表 + apply/pop/drop/show diff
+        ├── avalonia-m6-stash.png
+        ├── avalonia-m6-stash-mainwindow.png
+        ├── avalonia-m6-stash.txt
+        └── 进度-M6.md         ← M6 设计取舍 / 视觉断言细节
 ```
 
 ## 区分原则

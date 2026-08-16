@@ -444,6 +444,177 @@ public sealed class GitRepository : IDisposable
 		}
 	}
 
+	/// <summary>
+	/// M6：列出当前仓库所有 stash 条目。
+	/// <para>
+	/// 对应 <c>git stash list --format=%gd|%H|%s</c>：
+	/// <list type="bullet">
+	///   <item><c>%gd</c> → reflog selector（<c>stash@{0}</c>），可喂给 apply/pop/drop</item>
+	///   <item><c>%H</c> → stash commit 完整 SHA</item>
+	///   <item><c>%s</c> → subject（即 <c>On &lt;branch&gt;: &lt;msg&gt;</c>）</item>
+	/// </list>
+	/// 跨平台实现走 git CLI；biturbo 的 <c>bt_get_repository_stashes</c> 也能拿
+	/// （结构体 <c>BtStash</c> / <c>BtRepositoryStashes</c> 已就位），但 P/Invoke ABI
+	/// 在 Linux 上还没 smoke 测过，CLI 路径更稳；后续若 biturbo 跑通可切换。
+	/// </para>
+	/// </summary>
+	/// <returns>按 reflog 顺序（最新在前）的 GitStash 数组；空仓库返回空数组。</returns>
+	/// <exception cref="GitRepositoryException">git 进程启动失败。</exception>
+	public GitStash[] GetStashes()
+	{
+		EnsureNotDisposed();
+		// --format=%gd|%H|%s 让每行都是 3 段 NUL/换行 分隔
+		// 用 -z 让 \n 不会进入 message（message 本身允许 \n）
+		// 实际上 stash subject 是单行 --format 直接给 --format=%gd|%H|%s 即可
+		string raw = RunGit("stash-list", "stash", "list", "--format=%gd|%H|%s");
+		if (string.IsNullOrWhiteSpace(raw))
+		{
+			return Array.Empty<GitStash>();
+		}
+		string[] lines = raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+		var list = new List<GitStash>(lines.Length);
+		for (int i = 0; i < lines.Length; i++)
+		{
+			// 格式: "stash@{N}|<sha>|<subject>"
+			string line = lines[i];
+			int p1 = line.IndexOf('|');
+			if (p1 <= 0) continue;
+			int p2 = line.IndexOf('|', p1 + 1);
+			if (p2 <= p1) continue;
+			string selector = line.Substring(0, p1);
+			string sha = line.Substring(p1 + 1, p2 - p1 - 1);
+			string subject = line.Substring(p2 + 1);
+
+			// subject 通常是 "On <branch>: <message>"
+			// 拿不到这个前缀的（自定义 subject 或 detached HEAD）就当成纯 message
+			string branch = "";
+			string message = subject;
+			if (subject.StartsWith("On ", StringComparison.Ordinal))
+			{
+				int colonIdx = subject.IndexOf(": ", StringComparison.Ordinal);
+				if (colonIdx > 0)
+				{
+					branch = subject.Substring(3, colonIdx - 3);
+					message = subject.Substring(colonIdx + 2);
+				}
+			}
+
+			// selector 形如 "stash@{0}" → 拿 N
+			int idx = ParseReflogIndex(selector);
+
+			list.Add(new GitStash(idx, selector, sha, branch, message));
+		}
+		return list.ToArray();
+	}
+
+	/// <summary>把 "stash@{3}" 解析成数字 3；解析失败返回 -1。</summary>
+	private static int ParseReflogIndex(string selector)
+	{
+		if (string.IsNullOrEmpty(selector)) return -1;
+		int start = selector.IndexOf('{');
+		int end = selector.IndexOf('}');
+		if (start < 0 || end < 0 || end <= start + 1) return -1;
+		if (int.TryParse(selector.Substring(start + 1, end - start - 1), out int n))
+		{
+			return n;
+		}
+		return -1;
+	}
+
+	/// <summary>
+	/// M6：在当前 working tree 创建一个新的 stash（不传 message 就用 git 默认 "WIP on &lt;branch&gt;: ..."）。
+	/// 对应 <c>git stash push -m &lt;msg&gt;</c>（git ≥ 2.13 用 push；老版本用 save；本仓库假定 ≥ 2.13）。
+	/// </summary>
+	/// <returns>true 表示成功；false 表示 git 报告"没有可 stash 的改动"（退出码 0 但 stdout 为空）。</returns>
+	public bool StashPush(string? message)
+	{
+		EnsureNotDisposed();
+		// 用 --include-untracked 把 untracked 文件也暂存，与 WPF 原版行为一致
+		try
+		{
+			string stdout = RunGit("stash-push", "stash", "push", "--include-untracked",
+				string.IsNullOrWhiteSpace(message) ? "" : message!.Trim());
+			return !string.IsNullOrEmpty(stdout);
+		}
+		catch (GitRepositoryException ex)
+		{
+			// "No local changes to save" → git 退出码 1 + stderr 含此字符串
+			if (ex.Message.Contains("No local changes", StringComparison.OrdinalIgnoreCase))
+			{
+				return false;
+			}
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// M6：把 <paramref name="reflogSelector"/> 指向的 stash 应用回 working tree，但保留 stash。
+	/// 对应 <c>git stash apply &lt;selector&gt;</c>。
+	/// </summary>
+	/// <exception cref="GitRepositoryException">git 进程失败（含冲突等）。</exception>
+	public void StashApply(string reflogSelector)
+	{
+		EnsureNotDisposed();
+		if (string.IsNullOrWhiteSpace(reflogSelector))
+		{
+			throw new ArgumentException("reflogSelector 不能为空", nameof(reflogSelector));
+		}
+		RunGit("stash-apply", "stash", "apply", reflogSelector.Trim());
+	}
+
+	/// <summary>
+	/// M6：把 <paramref name="reflogSelector"/> 指向的 stash 应用回 working tree，并从 stash 栈中移除。
+	/// 对应 <c>git stash pop &lt;selector&gt;</c>。
+	/// </summary>
+	/// <exception cref="GitRepositoryException">git 进程失败（含冲突等）。</exception>
+	public void StashPop(string reflogSelector)
+	{
+		EnsureNotDisposed();
+		if (string.IsNullOrWhiteSpace(reflogSelector))
+		{
+			throw new ArgumentException("reflogSelector 不能为空", nameof(reflogSelector));
+		}
+		RunGit("stash-pop", "stash", "pop", reflogSelector.Trim());
+	}
+
+	/// <summary>
+	/// M6：从 stash 栈中丢弃 <paramref name="reflogSelector"/> 指向的条目。
+	/// 对应 <c>git stash drop &lt;selector&gt;</c>。
+	/// </summary>
+	/// <exception cref="GitRepositoryException">git 进程失败。</exception>
+	public void StashDrop(string reflogSelector)
+	{
+		EnsureNotDisposed();
+		if (string.IsNullOrWhiteSpace(reflogSelector))
+		{
+			throw new ArgumentException("reflogSelector 不能为空", nameof(reflogSelector));
+		}
+		RunGit("stash-drop", "stash", "drop", reflogSelector.Trim());
+	}
+
+	/// <summary>
+	/// M6：拿到某 stash 相对其 base commit 的 unified diff（整次 stash 的所有文件）。
+	/// 对应 <c>git stash show -p --no-color &lt;selector&gt;</c>。空 stash 返回空 DiffResult。
+	/// </summary>
+	/// <exception cref="ArgumentException">selector 为空。</exception>
+	/// <exception cref="GitRepositoryException">git 失败。</exception>
+	public DiffResult GetStashDiff(string reflogSelector)
+	{
+		EnsureNotDisposed();
+		if (string.IsNullOrWhiteSpace(reflogSelector))
+		{
+			throw new ArgumentException("reflogSelector 不能为空", nameof(reflogSelector));
+		}
+		string raw = RunGit("stash-show", "stash", "show", "-p", "--no-color", reflogSelector.Trim());
+		if (string.IsNullOrWhiteSpace(raw))
+		{
+			return new DiffResult("a/" + reflogSelector, "b/" + reflogSelector, Array.Empty<DiffLine>());
+		}
+		return UnifiedDiffParser.Parse(raw,
+			fallbackOldPath: "a/" + reflogSelector,
+			fallbackNewPath: "b/" + reflogSelector);
+	}
+
 	private static WorkingTreeChange[] ParsePorcelainStatus(string raw)
 	{
 		// -z 模式下：

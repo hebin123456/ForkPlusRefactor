@@ -28,6 +28,7 @@ namespace ForkPlus.Avalonia;
 ///   <item>M2+M3 提交列表 / diff：<see cref="CommitDiffPanel"/> 面板（已抽出到 Panels/CommitDiffPanel.xaml）</item>
 ///   <item>M4 工作区改动：<see cref="WorkingTreePanel"/> 面板（已抽出到 Panels/WorkingTreePanel.xaml）</item>
 ///   <item>M5 文件树 + 文件预览：<see cref="FileTreePanel"/> 面板（已抽出到 Panels/FileTreePanel.xaml）</item>
+///   <item>M6 贮藏 (stash) 列表 + apply/pop/drop：<see cref="StashPanel"/> 面板（已抽出到 Panels/StashPanel.xaml）</item>
 /// </list>
 /// </summary>
 public partial class MainWindow : Window
@@ -49,6 +50,8 @@ public partial class MainWindow : Window
     // M5 文件预览
     private TextBlock? _filePreviewTitle;
     private TextBlock? _filePreviewText;
+    // M6 面板（内部已含 ListBox + Apply/Pop/Drop/ShowDiff 按钮）
+    private StashPanel? _stashPanel;
 
     public MainWindow()
     {
@@ -90,8 +93,21 @@ public partial class MainWindow : Window
                 if (_statusText != null) _statusText.Text = hint;
             };
         }
+        // M6 面板
+        _stashPanel = this.FindControl<StashPanel>("StashPanel");
+        if (_stashPanel != null)
+        {
+            _stashPanel.ApplyRequested += OnStashApplyRequested;
+            _stashPanel.PopRequested += OnStashPopRequested;
+            _stashPanel.DropRequested += OnStashDropRequested;
+            _stashPanel.ShowDiffRequested += OnStashShowDiffRequested;
+            _stashPanel.SelectionChangedHint += (_, hint) =>
+            {
+                if (_statusText != null) _statusText.Text = hint;
+            };
+        }
         // M1+M2 操作处理器：装配好之后才能订阅分支变化
-        _repoOps = new RepoOpHandler(_branchesList, _commitDiffPanel, _workingTreePanel, _statusText, _fileTreePanel);
+        _repoOps = new RepoOpHandler(_branchesList, _commitDiffPanel, _workingTreePanel, _statusText, _fileTreePanel, _stashPanel);
 
         var ac = ServiceLocator.AppContext;
         if (_servicesText != null)
@@ -434,6 +450,130 @@ public void Reset()
         {
             if (_statusText != null) _statusText.Text = $"读取 {node.FullPath} 失败：{ex.Message}";
             return null;
+        }
+    }
+
+    // ============== M6: 贮藏 (delegated to StashPanel) ==============
+
+    /// <summary>
+    /// M6：处理 <see cref="StashPanel.ApplyRequested"/> —— 调
+    /// <see cref="GitRepository.StashApply"/>，然后 reload 本面板（stash 列表不变，但
+    /// working tree 变了所以顺便 reload M4 工作区）。
+    /// </summary>
+    private void OnStashApplyRequested(object? sender, GitStash? s)
+    {
+        if (_repoOps?.CurrentRepo == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
+            return;
+        }
+        if (s == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先选中一条 stash（M6）。";
+            return;
+        }
+        try
+        {
+            _repoOps.CurrentRepo.StashApply(s.ReflogSelector);
+            // 重新加载面板 + 工作区（M4 会变）
+            _stashPanel?.Reload();
+            _workingTreePanel?.Load(_repoOps.CurrentRepo);
+            if (_statusText != null) _statusText.Text = $"已 apply {s.ReflogSelector}（{s.DisplayLine}）。";
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null) _statusText.Text = $"apply {s.ReflogSelector} 失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// M6：处理 <see cref="StashPanel.PopRequested"/> —— 调 <see cref="GitRepository.StashPop"/>，
+    /// 然后 reload（stash 列表本身会少一条 → 重新拉）。
+    /// </summary>
+    private void OnStashPopRequested(object? sender, GitStash? s)
+    {
+        if (_repoOps?.CurrentRepo == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
+            return;
+        }
+        if (s == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先选中一条 stash（M6）。";
+            return;
+        }
+        try
+        {
+            _repoOps.CurrentRepo.StashPop(s.ReflogSelector);
+            // stash 列表会少一条 + working tree 变 → 双重 reload
+            _stashPanel?.Reload();
+            _workingTreePanel?.Load(_repoOps.CurrentRepo);
+            if (_statusText != null) _statusText.Text = $"已 pop {s.ReflogSelector}（{s.DisplayLine}）。";
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null) _statusText.Text = $"pop {s.ReflogSelector} 失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// M6：处理 <see cref="StashPanel.DropRequested"/> —— 调 <see cref="GitRepository.StashDrop"/>，
+    /// 然后 reload（stash 列表会少一条）。
+    /// </summary>
+    private void OnStashDropRequested(object? sender, GitStash? s)
+    {
+        if (_repoOps?.CurrentRepo == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
+            return;
+        }
+        if (s == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先选中一条 stash（M6）。";
+            return;
+        }
+        try
+        {
+            _repoOps.CurrentRepo.StashDrop(s.ReflogSelector);
+            // 重新拉 stash 列表（少一条）+ working tree 不变
+            _stashPanel?.Reload();
+            if (_statusText != null) _statusText.Text = $"已 drop {s.ReflogSelector}（{s.DisplayLine}）。";
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null) _statusText.Text = $"drop {s.ReflogSelector} 失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// M6：处理 <see cref="StashPanel.ShowDiffRequested"/> —— 调
+    /// <see cref="GitRepository.GetStashDiff"/> 拿 unified diff 并弹 <see cref="DiffWindow"/>。
+    /// </summary>
+    private void OnStashShowDiffRequested(object? sender, GitStash? s)
+    {
+        if (_repoOps?.CurrentRepo == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
+            return;
+        }
+        if (s == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先选中一条 stash（M6）。";
+            return;
+        }
+        try
+        {
+            DiffResult diff = _repoOps.CurrentRepo.GetStashDiff(s.ReflogSelector);
+            var w = new DiffWindow(diff);
+            w.Show();
+            if (_statusText != null)
+            {
+                _statusText.Text = $"已打开 {s.ReflogSelector} 的 diff：{diff.Lines.Count} 行（{s.DisplayLine}）。";
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null) _statusText.Text = $"打开 {s.ReflogSelector} diff 失败：{ex.Message}";
         }
     }
 }
