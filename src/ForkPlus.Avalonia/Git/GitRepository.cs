@@ -296,6 +296,154 @@ public sealed class GitRepository : IDisposable
 			fallbackNewPath: "b/" + relativePath);
 	}
 
+	/// <summary>
+	/// M5：拿到指定 ref 的文件树（递归）。
+	/// <para>
+	/// 对应 <c>git ls-tree -r &lt;ref&gt;</c>：每个 blob 输出一行
+	/// <c>&lt;mode&gt; &lt;type&gt; &lt;sha&gt;\t&lt;path&gt;</c>。
+	/// 解析后还原为层级 <see cref="FileTreeNode"/>（对标 WPF 原版
+	/// <c>GetRevisionFileTreeGitCommand</c> + <c>RevisionFileTreeViewItem</c>）。
+	/// </para>
+	/// <para>
+	/// 这里走 <c>git</c> CLI 而非 biturbo 原生 <c>bt_get_tree</c>，因为
+	/// <c>bt_get_tree</c> 不会展开"tree-of-tree"，需要在 C# 侧按路径段递归再调一次，
+	/// 等价路径数 = 文件数（每次拿整层）。CLI 一次 <c>git ls-tree -r</c> 拿全所有路径更简单。
+	/// 在跨平台侧，git 路径由 <see cref="ServiceLocator.GitPathResolver"/> 解析。
+	/// </para>
+	/// </summary>
+	/// <param name="refName">ref 短名（main）或完整名（refs/heads/main）或 commit SHA。</param>
+	/// <returns>根节点（虚拟根，<c>FullPath == ""</c>），其 Children 是仓库顶层目录/文件。</returns>
+	/// <exception cref="ArgumentException">refName 为空。</exception>
+	/// <exception cref="GitRepositoryException">git ls-tree 失败（ref 不存在、不是 tree、git 缺失等）。</exception>
+	public FileTreeNode GetFileTree(string refName)
+	{
+		EnsureNotDisposed();
+		if (string.IsNullOrWhiteSpace(refName))
+		{
+			throw new ArgumentException("refName 不能为空", nameof(refName));
+		}
+		// -r 递归（一次性拿全部文件），-z NUL 分隔（路径里可能有空格/中文）
+		string raw = RunGit("ls-tree", "ls-tree", "-r", "-z", refName);
+		FileTreeNode root = new FileTreeNode(
+			name: "",
+			fullPath: "",
+			sha: "",
+			itemType: FileTreeNode.FileTreeNodeKind.Directory,
+			depth: -1);
+		if (string.IsNullOrEmpty(raw))
+		{
+			return root; // 空 ref（理论上不可能，但兜底）
+		}
+		string[] entries = raw.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+		foreach (string entry in entries)
+		{
+			// 格式： "<mode> <type> <sha>\t<path>"
+			int tab = entry.IndexOf('\t');
+			if (tab <= 0) continue;
+			string meta = entry.Substring(0, tab);
+			string path = entry.Substring(tab + 1);
+			string[] metaParts = meta.Split(' ');
+			if (metaParts.Length < 3) continue;
+			string typeStr = metaParts[1];
+			string sha = metaParts[2];
+			FileTreeNode.FileTreeNodeKind kind = typeStr switch
+			{
+				"blob" => FileTreeNode.FileTreeNodeKind.File,
+				"tree" => FileTreeNode.FileTreeNodeKind.Directory,
+				"commit" => FileTreeNode.FileTreeNodeKind.Submodule,
+				_ => FileTreeNode.FileTreeNodeKind.File,
+			};
+			// 递归创建/复用中间目录节点
+			InsertPath(root, path, sha, kind);
+		}
+		SortRecursive(root);
+		return root;
+	}
+
+	/// <summary>把 "src/Foo/Bar/baz.cs" 拆段并依次插入到 root 的 Children 中。
+	/// 已存在的中间目录复用（按 FullPath 匹配）。</summary>
+	private static void InsertPath(FileTreeNode parent, string relativePath, string sha, FileTreeNode.FileTreeNodeKind leafKind)
+	{
+		string[] parts = relativePath.Split('/');
+		FileTreeNode current = parent;
+		for (int i = 0; i < parts.Length; i++)
+		{
+			string part = parts[i];
+			bool isLeaf = i == parts.Length - 1;
+			// 找现有同名子节点
+			FileTreeNode? existing = null;
+			foreach (FileTreeNode c in current.Children)
+			{
+				if (c.Name == part) { existing = c; break; }
+			}
+			if (existing != null)
+			{
+				current = existing;
+				continue;
+			}
+			// 计算当前段全路径（root 的 FullPath 为 ""，拼接时用 '/'）
+			string curPath = current.Depth < 0
+				? part
+				: current.FullPath + "/" + part;
+			FileTreeNode.FileTreeNodeKind curKind = isLeaf
+				? leafKind
+				: FileTreeNode.FileTreeNodeKind.Directory; // 中间段一定是目录
+			// 中间段没 SHA（git ls-tree -r 只给叶子 SHA）
+			string curSha = isLeaf ? sha : "";
+			FileTreeNode node = new FileTreeNode(
+				name: part,
+				fullPath: curPath,
+				sha: curSha,
+				itemType: curKind,
+				depth: current.Depth + 1);
+			current.Children.Add(node);
+			current = node;
+		}
+	}
+
+	/// <summary>递归排序：目录优先，再按文件名自然序（同 WPF 原版 <c>NaturalStringComparer</c>）。</summary>
+	private static void SortRecursive(FileTreeNode node)
+	{
+		if (node.Children.Count == 0) return;
+		node.Children.Sort((a, b) =>
+		{
+			int t = -1 * a.ItemType.CompareTo(b.ItemType); // Directory 在前
+			return t != 0 ? t : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+		});
+		foreach (FileTreeNode c in node.Children)
+		{
+			SortRecursive(c);
+		}
+	}
+
+	/// <summary>
+	/// M5：拿到某文件在指定 ref 下的原始内容（<c>git show &lt;ref&gt;:&lt;path&gt;</c>）。
+	/// <para>
+	/// 用作 file tree 双击文件时在右侧文件内容预览区显示。对标 WPF 原版
+	/// <c>FileListUserControl.OnFileDoubleClick</c> → <c>FileContentControl</c>。
+	/// </para>
+	/// </summary>
+	/// <param name="refName">完整 ref 或 commit SHA。</param>
+	/// <param name="relativePath">相对仓库根的路径（须是文件，不支持目录）。</param>
+	/// <returns>文件内容（UTF-8 解码，失败时返回错误字符串而非抛异常，以便 UI 直接显示）。</returns>
+	public string GetFileContent(string refName, string relativePath)
+	{
+		EnsureNotDisposed();
+		if (string.IsNullOrWhiteSpace(refName) || string.IsNullOrWhiteSpace(relativePath))
+		{
+			return string.Empty;
+		}
+		try
+		{
+			// git show <ref>:<path> 输出文件内容到 stdout
+			return RunGit("show-file", "show", $"{refName}:{relativePath}");
+		}
+		catch (Exception ex)
+		{
+			return $"[无法读取 {refName}:{relativePath}：{ex.Message}]";
+		}
+	}
+
 	private static WorkingTreeChange[] ParsePorcelainStatus(string raw)
 	{
 		// -z 模式下：

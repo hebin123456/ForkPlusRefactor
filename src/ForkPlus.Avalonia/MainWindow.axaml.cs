@@ -27,6 +27,7 @@ namespace ForkPlus.Avalonia;
 ///   <item>M1+M2 仓库/分支/提交加载：<see cref="RepoOpHandler"/>（已抽到 RepoOpHandler.cs）</item>
 ///   <item>M2+M3 提交列表 / diff：<see cref="CommitDiffPanel"/> 面板（已抽出到 Panels/CommitDiffPanel.xaml）</item>
 ///   <item>M4 工作区改动：<see cref="WorkingTreePanel"/> 面板（已抽出到 Panels/WorkingTreePanel.xaml）</item>
+///   <item>M5 文件树 + 文件预览：<see cref="FileTreePanel"/> 面板（已抽出到 Panels/FileTreePanel.xaml）</item>
 /// </list>
 /// </summary>
 public partial class MainWindow : Window
@@ -43,6 +44,11 @@ public partial class MainWindow : Window
     private CommitDiffPanel? _commitDiffPanel;
     // M4 面板（内部已含 ListBox/Button/TextBlock）
     private WorkingTreePanel? _workingTreePanel;
+    // M5 面板（内部已含 TreeView + Button + TextBlock）
+    private FileTreePanel? _fileTreePanel;
+    // M5 文件预览
+    private TextBlock? _filePreviewTitle;
+    private TextBlock? _filePreviewText;
 
     public MainWindow()
     {
@@ -72,8 +78,20 @@ public partial class MainWindow : Window
                 if (_statusText != null) _statusText.Text = hint;
             };
         }
+        // M5 面板
+        _fileTreePanel = this.FindControl<FileTreePanel>("FileTreePanel");
+        _filePreviewTitle = this.FindControl<TextBlock>("FilePreviewTitle");
+        _filePreviewText = this.FindControl<TextBlock>("FilePreviewText");
+        if (_fileTreePanel != null)
+        {
+            _fileTreePanel.FileOpenRequested += OnFileOpenRequested;
+            _fileTreePanel.SelectionChangedHint += (_, hint) =>
+            {
+                if (_statusText != null) _statusText.Text = hint;
+            };
+        }
         // M1+M2 操作处理器：装配好之后才能订阅分支变化
-        _repoOps = new RepoOpHandler(_branchesList, _commitDiffPanel, _workingTreePanel, _statusText);
+        _repoOps = new RepoOpHandler(_branchesList, _commitDiffPanel, _workingTreePanel, _statusText, _fileTreePanel);
 
         var ac = ServiceLocator.AppContext;
         if (_servicesText != null)
@@ -356,6 +374,65 @@ public void Reset()
         {
             if (_statusText != null)
                 _statusText.Text = $"打开 {c.Path} diff 失败：{ex.Message}";
+            return null;
+        }
+    }
+
+    // ============== M5: 文件树 + 文件预览 ==============
+
+    /// <summary>
+    /// M5：处理 <see cref="FileTreePanel.FileOpenRequested"/> 事件 ——
+    /// 调 <see cref="GitRepository.GetFileContent"/> 拿原始内容并显示在主窗口的预览框。
+    /// </summary>
+    private void OnFileOpenRequested(object? sender, FileTreeNode node)
+    {
+        var repo = _repoOps?.CurrentRepo;
+        if (repo == null)
+        {
+            if (_statusText != null) _statusText.Text = "请先打开一个仓库（M1）。";
+            return;
+        }
+        try
+        {
+            string content = repo.GetFileContent(_fileTreePanel?.CurrentRef ?? "HEAD", node.FullPath);
+            if (_filePreviewTitle != null) _filePreviewTitle.Text = $"文件内容预览（M5 · {node.FullPath}）";
+            if (_filePreviewText != null) _filePreviewText.Text = content;
+            if (_statusText != null) _statusText.Text = $"已显示 {node.FullPath}（{content.Length} 字符）";
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null) _statusText.Text = $"读取 {node.FullPath} 失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// M5：旧 API 兼容（被 headless 测试直接调来弹窗）。从面板当前选中项拿 FileTreeNode。
+    /// </summary>
+    public string? OpenSelectedFileContent()
+    {
+        var repo = _repoOps?.CurrentRepo;
+        var node = _fileTreePanel?.SelectedNode;
+        if (repo == null || node == null)
+        {
+            if (_statusText != null)
+            {
+                _statusText.Text = repo == null
+                    ? "请先打开一个仓库（M1）。"
+                    : "请先在文件树中选中一个文件（M5）。";
+            }
+            return null;
+        }
+        try
+        {
+            string content = repo.GetFileContent(_fileTreePanel.CurrentRef, node.FullPath);
+            if (_filePreviewTitle != null) _filePreviewTitle.Text = $"文件内容预览（M5 · {node.FullPath}）";
+            if (_filePreviewText != null) _filePreviewText.Text = content;
+            if (_statusText != null) _statusText.Text = $"已显示 {node.FullPath}（{content.Length} 字符）";
+            return content;
+        }
+        catch (Exception ex)
+        {
+            if (_statusText != null) _statusText.Text = $"读取 {node.FullPath} 失败：{ex.Message}";
             return null;
         }
     }

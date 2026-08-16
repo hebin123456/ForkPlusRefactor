@@ -7,18 +7,19 @@ using ForkPlus.Avalonia.Panels;
 namespace ForkPlus.Avalonia;
 
 /// <summary>
-/// M1 + M2 仓库/分支/提交加载操作处理器：把"打开 GitRepository → 拉分支 → 选分支拉提交"
-/// 这一串跨 vertical slice 的协调逻辑从 <see cref="MainWindow"/> 抽出来。
+/// M1 + M2 + M5 仓库/分支/提交/文件树加载操作处理器：把"打开 GitRepository → 拉分支 → 选分支拉提交
+/// → 拉文件树"这一串跨 vertical slice 的协调逻辑从 <see cref="MainWindow"/> 抽出来。
 ///
 /// <para>
 /// 之前 <see cref="MainWindow"/> 把 M1（仓库+分支）和 M2（提交列表）逻辑都内联在自己身上，
-/// 加上 M3 / M4 之后越来越臃肿。本类只关心"仓库操作"：
+/// 加上 M3 / M4 / M5 之后越来越臃肿。本类只关心"仓库操作"：
 /// </para>
 /// <list type="bullet">
 ///   <item>M1：<see cref="Open"/> 给路径 → 创建 <see cref="GitRepository"/> → 拉 <c>GetBranches()</c> →
-///         把分支列表喂给传入的 branchesList；同时清空 commit 列表（开新仓库） + 刷工作区（M4）</item>
+///         把分支列表喂给传入的 branchesList；同时清空 commit 列表（开新仓库） + 刷工作区（M4） + 刷文件树（M5）</item>
 ///   <item>M2：<see cref="SelectBranch"/> 给分支名 → <c>GetCommits(branch, 50)</c> →
 ///         把提交列表喂给传入的 <see cref="CommitDiffPanel"/></item>
+///   <item>M5：开新仓库时同步刷一次文件树（HEAD）</item>
 /// </list>
 ///
 /// <para>
@@ -32,20 +33,23 @@ public class RepoOpHandler
     private readonly CommitDiffPanel? _commitDiffPanel;
     private readonly WorkingTreePanel? _workingTreePanel;
     private readonly TextBlock? _statusText;
+    private readonly FileTreePanel? _fileTreePanel;
 
-    /// <summary>当前打开的仓库。M3 / M4 在需要拿 diff 时读这个字段。</summary>
+    /// <summary>当前打开的仓库。M3 / M4 / M5 在需要拿 diff / content 时读这个字段。</summary>
     public GitRepository? CurrentRepo { get; private set; }
 
     public RepoOpHandler(
         ListBox? branchesList,
         CommitDiffPanel? commitDiffPanel,
         WorkingTreePanel? workingTreePanel,
-        TextBlock? statusText)
+        TextBlock? statusText,
+        FileTreePanel? fileTreePanel = null)
     {
         _branchesList = branchesList;
         _commitDiffPanel = commitDiffPanel;
         _workingTreePanel = workingTreePanel;
         _statusText = statusText;
+        _fileTreePanel = fileTreePanel;
     }
 
     /// <summary>
@@ -74,6 +78,8 @@ public class RepoOpHandler
             }
             // M4：同步刷一次工作区改动
             _workingTreePanel?.Load(CurrentRepo);
+            // M5：同步刷一次文件树（默认 ref=HEAD）
+            _fileTreePanel?.Load(CurrentRepo, "HEAD");
         }
         catch (Exception ex)
         {
@@ -83,6 +89,8 @@ public class RepoOpHandler
 
     /// <summary>
     /// M2：分支被选中后，通过 biturbo 列该分支最新 50 条提交，喂给 <see cref="CommitDiffPanel"/>。
+    /// M5：同时把"该分支的 tree-ish"传给 fileTreePanel（用 refs/heads/&lt;name&gt; 拿得到 tree，
+    /// 短名也行 —— git ls-tree 内部会查 ref）。
     /// </summary>
     public void SelectBranch(string? selected)
     {
@@ -94,6 +102,8 @@ public class RepoOpHandler
         {
             GitCommit[] commits = CurrentRepo.GetCommits(selected, maxCount: 50);
             _commitDiffPanel?.LoadCommits(commits);
+            // M5：切分支时同步刷文件树（用分支名当 ref，git ls-tree 自动解析）
+            _fileTreePanel?.Load(CurrentRepo, selected);
             if (_statusText != null)
             {
                 _statusText.Text = commits.Length == 0

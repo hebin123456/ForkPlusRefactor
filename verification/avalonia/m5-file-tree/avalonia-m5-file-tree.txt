@@ -1,0 +1,22 @@
+Avalonia M5 文件树截屏（7 节点，2 目录，4 文件）
+数据流断言：
+  root.FlatCount() == 7 (expected 7)
+  顶层 children (排序后)：
+    DIR  docs                 (depth=0, children=1)
+    DIR  src                  (depth=0, children=2)
+    FILE README.md            (depth=0, children=0)
+可视化树徽章颜色断言：
+  docs                 kind=Directory  badge=#ffc09a50
+  intro.md             kind=File       badge=#ff4a4a4a
+  src                  kind=Directory  badge=#ffc09a50
+  main.cs              kind=File       badge=#ff4a4a4a
+  util.cs              kind=File       badge=#ff4a4a4a
+  README.md            kind=File       badge=#ff4a4a4a
+Converter 预期颜色：
+  Directory = #ffc09a50
+  File      = #ff4a4a4a
+  Submodule = #ff9050c0
+文件内容断言：
+  HEAD:README.md = Hello from M5 fixture!\n
+  HEAD:src/main.cs = // M5 fixture main\nConsole.WriteLine("hi");\n
+源仓库：/tmp/forkplus_m5_visual_repo_ceba84f0805540ec838f6b1bc5248372
