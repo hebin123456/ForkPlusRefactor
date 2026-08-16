@@ -3,13 +3,16 @@ using System.Collections.Generic;
 namespace ForkPlus.Avalonia.Dialogs;
 
 /// <summary>
-/// 简单 POCO：用于 RemoveStash 弹窗 ItemsControl 列表项。
-/// WPF 原版用 <c>StashRevision : IGitPoint</c>，迁移到 Avalonia 时抽象为 (ReflogName, Subject) 二元组。
+/// 简单 POCO：用于 ApplyStash / RemoveStash 弹窗 ItemsControl 列表项。
+/// WPF 原版用 <c>StashRevision : IGitPoint</c>，迁移到 Avalonia 时抽象为
+/// (ReflogName, Subject) 二元组；ApplyStash 额外携带 Branch 字段。
 /// </summary>
 public sealed class StashItem
 {
     public string ReflogName { get; set; } = string.Empty;
     public string Subject { get; set; } = string.Empty;
+    public string Branch { get; set; } = string.Empty;
+    public string Display => string.IsNullOrEmpty(Subject) ? ReflogName : $"{ReflogName}: {Subject}";
 }
 
 public sealed class RemoveStashViewModel
